@@ -1,14 +1,15 @@
 // 专注榜页面（Leaderboard）
 // 幽灵注释：文件负责拉取并展示“今日 / 总计”专注榜，前端做简单聚合并渲染。
 // 关键点：从 `study_logs` 拉取日志，按 user_id 聚合时长，额外查询用户昵称与任务标题。
-import { StyleSheet, TouchableOpacity, FlatList, ActivityIndicator, View } from 'react-native';
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
 
+import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { supabase } from '@/utils/supabase';
-import { Colors } from '@/constants/theme';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { supabase } from '@/utils/supabase';
 
 // 榜单项：每个用户的聚合结果（最小字段集）
 interface LeaderboardEntry {
@@ -141,9 +142,9 @@ export default function TabTwoScreen() {
   return (
     <ThemedView style={styles.container}>
       <ThemedView style={styles.header}>
-        <ThemedText type="title">🏆 专注榜</ThemedText>
-        <TouchableOpacity onPress={() => fetchLeaderboard(activeTab)} style={[styles.refreshButton, { backgroundColor: Colors[theme].tint }]}>
-          <ThemedText style={styles.refreshText}>刷新</ThemedText>
+        <ThemedText type="subtitle" style={{ fontSize: 20 }}>专注榜</ThemedText>
+        <TouchableOpacity onPress={() => fetchLeaderboard(activeTab)} style={{ padding: 8 }}>
+          <IconSymbol name="arrow.clockwise" size={20} color={Colors[theme].text} />
         </TouchableOpacity>
       </ThemedView>
 
@@ -194,23 +195,46 @@ export default function TabTwoScreen() {
               {activeTab === 'today' ? '今天还没有人开始专注哦，快去抢占第一名！' : '还没有专注记录，快去开始专注吧！'}
             </ThemedText>
           }
-          renderItem={({ item, index }) => (
-            <ThemedView style={[styles.card, { borderColor: Colors[theme].icon }]}>
-              <View style={styles.rankBadge}>
-                <ThemedText style={styles.rankText}>#{index + 1}</ThemedText>
-              </View>
-              
-              <View style={styles.userInfo}>
-                <ThemedText type="subtitle">{item.username || `用户 ${item.user_id.slice(0, 4)}...`}</ThemedText>
-                <ThemedText style={{ opacity: 0.7 }}>专注时长: {formatDuration(item.total_duration)}</ThemedText>
-                {item.last_task_title && (
-                  <ThemedText style={{ fontSize: 12, opacity: 0.5, marginTop: 2 }}>
-                    最近专注: {item.last_task_title}
+          renderItem={({ item, index }) => {
+            const isTop3 = index < 3;
+            const rankColor = index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : Colors[theme].text;
+            const avatarLetter = item.username ? item.username[0].toUpperCase() : 'U';
+            
+            return (
+              <ThemedView style={[styles.card, { borderColor: Colors[theme].icon + '20', backgroundColor: Colors[theme].background }]}>
+                {/* Rank */}
+                <View style={styles.rankContainer}>
+                  <ThemedText style={[styles.rankText, { color: rankColor, fontSize: isTop3 ? 24 : 16 }]}>
+                    {index + 1}
                   </ThemedText>
-                )}
-              </View>
-            </ThemedView>
-          )}
+                </View>
+                
+                {/* Avatar */}
+                <View style={[styles.avatar, { backgroundColor: Colors[theme].tint }]}>
+                  <ThemedText style={styles.avatarText}>{avatarLetter}</ThemedText>
+                </View>
+                
+                {/* User Info */}
+                <View style={styles.userInfo}>
+                  <ThemedText type="defaultSemiBold" style={{ fontSize: 16 }}>
+                    {item.username || `用户 ${item.user_id.slice(0, 4)}`}
+                  </ThemedText>
+                  {item.last_task_title && (
+                    <ThemedText numberOfLines={1} style={{ fontSize: 12, opacity: 0.5, marginTop: 2 }}>
+                      最近: {item.last_task_title}
+                    </ThemedText>
+                  )}
+                </View>
+
+                {/* Duration */}
+                <View style={styles.durationContainer}>
+                  <ThemedText style={[styles.durationText, { color: Colors[theme].tint }]}>
+                    {formatDuration(item.total_duration)}
+                  </ThemedText>
+                </View>
+              </ThemedView>
+            );
+          }}
           contentContainerStyle={styles.listContent}
         />
       )}
@@ -225,7 +249,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 20,
-    marginBottom: 10,
+    marginBottom: 15,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -233,19 +257,20 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     paddingHorizontal: 20,
-    marginBottom: 15,
+    marginBottom: 20,
     gap: 10,
   },
   tabButton: {
     flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 12,
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: 'rgba(0,0,0,0.03)',
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
+    opacity: 0.7,
   },
   refreshButton: {
     paddingVertical: 8,
@@ -265,29 +290,53 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 20,
     paddingBottom: 20,
-    gap: 15,
+    gap: 12,
   },
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
-    borderRadius: 12,
+    padding: 16,
+    borderRadius: 16,
     borderWidth: 1,
-    gap: 15,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  rankBadge: {
+  rankContainer: {
+    width: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rankText: {
+    fontWeight: '900',
+    fontStyle: 'italic',
+  },
+  avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.05)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  rankText: {
+  avatarText: {
+    color: '#fff',
     fontSize: 18,
     fontWeight: 'bold',
   },
   userInfo: {
     flex: 1,
+    justifyContent: 'center',
+  },
+  durationContainer: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    minWidth: 60,
+  },
+  durationText: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

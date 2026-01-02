@@ -1,8 +1,8 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, View, Platform } from 'react-native';
+import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
-import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import React, { useEffect, useRef } from 'react';
+import { Animated, StyleSheet, View } from 'react-native';
 
 interface ToastProps {
   visible: boolean;

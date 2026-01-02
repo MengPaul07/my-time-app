@@ -1,9 +1,9 @@
-import React from 'react';
-import { Modal, StyleSheet, TouchableOpacity, View, Dimensions } from 'react-native';
+import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import React from 'react';
+import { Dimensions, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 interface AlertButton {
   text: string;

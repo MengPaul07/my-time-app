@@ -42,5 +42,5 @@ app-example
 /ios
 /android
 
-
+#vscode
 .vscode/

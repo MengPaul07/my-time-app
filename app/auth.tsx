@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { Alert, StyleSheet, TextInput, TouchableOpacity, View, ActivityIndicator, Platform } from 'react-native';
-import { supabase } from '@/utils/supabase';
+import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { AuthWeakPasswordError } from '@supabase/supabase-js';
+import { supabase } from '@/utils/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { ActivityIndicator, DeviceEventEmitter, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 
 const isValidEmail = (email: string) => {
@@ -20,7 +21,18 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const colorScheme = useColorScheme();
+  const router = useRouter();
   const theme = colorScheme ?? 'light';
+
+  async function handleGuestLogin() {
+    try {
+      await AsyncStorage.setItem('guest_mode', 'true');
+      DeviceEventEmitter.emit('guest_mode_changed', true);
+      router.replace('/(tabs)');
+    } catch (e) {
+      console.error(e);
+    }
+  }
 
   // 登录逻辑：使用邮箱和密码登录
   // 注意：如果遇到连接问题，请检查 utils/supabase.ts 中的 URL 和 Key 是否正确
@@ -153,6 +165,14 @@ export default function AuthScreen() {
           onPress={signUpWithEmail}
         >
           <ThemedText style={[styles.buttonText, { color: Colors[theme].tint }]}>注册</ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.button, styles.secondaryButton, { borderColor: Colors[theme].icon, marginTop: 10 }]}
+          disabled={loading}
+          onPress={handleGuestLogin}
+        >
+          <ThemedText style={[styles.buttonText, { color: Colors[theme].text }]}>游客登录</ThemedText>
         </TouchableOpacity>
 
         {errorMsg ? (

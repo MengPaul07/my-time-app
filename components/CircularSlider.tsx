@@ -1,15 +1,15 @@
-import React, { useCallback } from 'react';
-import { View, StyleSheet, Dimensions, Platform } from 'react-native';
-import Svg, { Circle, G } from 'react-native-svg';
-import Animated, {
-  useSharedValue,
-  useAnimatedProps,
-  useDerivedValue,
-  runOnJS,
-  withTiming,
-} from 'react-native-reanimated';
+import { Colors } from '@/components/constants/theme';
+import * as Haptics from 'expo-haptics';
+import React from 'react';
+import { Dimensions, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { Colors } from '@/constants/theme';
+import Animated, {
+    runOnJS,
+    useAnimatedProps,
+    useDerivedValue,
+    useSharedValue
+} from 'react-native-reanimated';
+import Svg, { Circle, G } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
 const CIRCLE_SIZE = width * 0.8;
@@ -45,6 +45,7 @@ export default function CircularSlider({
   const initialAngle = (totalDuration / 60 / MAX_MINUTES) * 2 * Math.PI;
   
   const theta = useSharedValue(initialAngle);
+  const lastMinutes = useSharedValue(MIN_MINUTES);
   
   // 监听外部 totalDuration 变化 (比如重置时)
   React.useEffect(() => {
@@ -102,6 +103,12 @@ export default function CircularSlider({
       // 限制范围
       if (minutes < MIN_MINUTES) minutes = MIN_MINUTES;
       if (minutes > MAX_MINUTES) minutes = MAX_MINUTES;
+
+      // 震动反馈
+      if (minutes !== lastMinutes.value) {
+        lastMinutes.value = minutes;
+        runOnJS(Haptics.selectionAsync)();
+      }
       
       const seconds = minutes * 60;
       runOnJS(onTimeChange)(seconds);
