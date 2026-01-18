@@ -34,6 +34,9 @@ const MAPPING = {
   'laptop': 'computer',
   'speaker.slash.fill': 'volume-off',
   'speaker.wave.2.fill': 'volume-up',
+  'bubble.left.fill': 'chat',
+  'xmark.circle.fill': 'close',
+  'arrow.up.circle.fill': 'arrow-upward',
 } as IconMapping;
 
 /**

@@ -28,7 +28,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // --- 2. 配置与包装 ---
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const HOUR_HEIGHT = 100; // Increased height for better visibility
+const HOUR_HEIGHT = 100; // 提高单小时高度，便于查看
 const START_HOUR = 6;   
 const END_HOUR = 23;    
 const PALETTE = ['#0a7ea4', '#9b59b6', '#e67e22', '#2ecc71', '#e74c3c', '#34495e'];
@@ -47,16 +47,16 @@ interface Task {
   is_course?: boolean; // 标记是否为课程
   location?: string;   // 课程地点
   color?: string;      // 自定义颜色
-  is_deadline?: boolean; // 标记是否为 Deadline
+  is_deadline?: boolean; // 标记是否为截止项
 }
 
 interface Course {
   id: number;
   name: string;
   location: string;
-  day_of_week: number; // 1-7
-  start_time: string; // "HH:mm"
-  end_time: string;   // "HH:mm"
+  day_of_week: number; // 1-7（周一到周日）
+  start_time: string; // "HH:mm" 格式
+  end_time: string;   // "HH:mm" 格式
   color?: string;     // 自定义颜色
 }
 
@@ -64,13 +64,14 @@ interface CurrentTimeLineProps {
   selectedDate: Date;
 }
 
+// 当前时间红线组件：只在“今天”且时间位于可视区间时才显示
 const CurrentTimeLine = ({ selectedDate }: CurrentTimeLineProps) => {
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
     const timer = setInterval(() => {
       setNow(new Date());
-    }, 60000); // Update every minute
+    }, 60000); // 每分钟刷新当前时间
     return () => clearInterval(timer);
   }, []);
 
@@ -102,7 +103,7 @@ const ScheduleContent = () => {
   
   const timelineRef = useRef<ScrollView>(null);
   
-  // Draft storage for Task
+  // 任务草稿存储：用 ref 存草稿，避免切页或编辑切换时丢失输入
   const taskDraft = useRef({
     title: '',
     description: '',
@@ -134,19 +135,19 @@ const ScheduleContent = () => {
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [tempHour, setTempHour] = useState(START_HOUR);
   const [tempMinute, setTempMinute] = useState(0);
-  const [fabMenuVisible, setFabMenuVisible] = useState(false); // New state for FAB menu
-  const [isPickerVisible, setIsPickerVisible] = useState(false); // State for time picker visibility
-  const [pickerMode, setPickerMode] = useState<'task' | 'course_start' | 'course_end'>('task'); // Picker mode
-  const [selectedColor, setSelectedColor] = useState(PALETTE[0]); // Color picker state
-  const [isDeadlineMode, setIsDeadlineMode] = useState(false); // Deadline mode state
-  const [showDatePicker, setShowDatePicker] = useState(false); // Date picker state
+  const [fabMenuVisible, setFabMenuVisible] = useState(false); // 悬浮菜单开关
+  const [isPickerVisible, setIsPickerVisible] = useState(false); // 时间选择器显示开关
+  const [pickerMode, setPickerMode] = useState<'task' | 'course_start' | 'course_end'>('task'); // 时间选择器当前模式
+  const [selectedColor, setSelectedColor] = useState(PALETTE[0]); // 任务颜色选择
+  const [isDeadlineMode, setIsDeadlineMode] = useState(false); // 是否处于截止模式
+  const [showDatePicker, setShowDatePicker] = useState(false); // 日期选择器显示开关
   
-  // Date Picker State
+  // 日期选择器临时状态
   const [tempYear, setTempYear] = useState(new Date().getFullYear());
   const [tempMonth, setTempMonth] = useState(new Date().getMonth() + 1);
   const [tempDay, setTempDay] = useState(new Date().getDate());
 
-  // Course Form State
+  // 课程表单状态
   const [courseName, setCourseName] = useState('');
   const [courseLocation, setCourseLocation] = useState('');
   const [courseDay, setCourseDay] = useState(1);
@@ -154,23 +155,25 @@ const ScheduleContent = () => {
   const [courseStartMinute, setCourseStartMinute] = useState(0);
   const [courseEndHour, setCourseEndHour] = useState(9);
   const [courseEndMinute, setCourseEndMinute] = useState(35);
-  const [courseColor, setCourseColor] = useState(PALETTE[0]); // Course color state
+  const [courseColor, setCourseColor] = useState(PALETTE[0]); // 课程颜色选择
 
   // 占位符颜色计算 (基于当前主题文本颜色，设置 60% 不透明度)
   const placeholderColor = Colors[theme].text + '99';
 
   // --- 4. 核心逻辑 ---
+  // 页面重新聚焦时，从本地存储同步最新任务列表
   useFocusEffect(
     useCallback(() => {
       fetchTasks();
     }, [])
   );
 
+  // 首次挂载：先读本地缓存课程，再尝试从 Supabase 拉取
   useEffect(() => {
     loadCachedCourses().then(() => fetchCourses());
   }, []);
 
-  // Auto-scroll to current time
+  // 时间轴模式下，自动滚动到当前时间附近
   useEffect(() => {
     if (viewMode === 'timeline' && timelineRef.current) {
       const now = new Date();
@@ -209,7 +212,7 @@ const ScheduleContent = () => {
         setCourses(data || []);
         await AsyncStorage.setItem('courses_data', JSON.stringify(data || []));
       } else {
-        // Guest mode: load from local storage
+        // 游客模式：只从本地缓存读取课程
         const cached = await AsyncStorage.getItem('courses_data');
         if (cached) {
           setCourses(JSON.parse(cached));
@@ -258,17 +261,17 @@ const ScheduleContent = () => {
       return;
     }
 
-    // Check for overlapping courses
+    // 检查同一天课程是否时间冲突
     const hasOverlap = courses.some(c => {
-      if (editingCourse && c.id === editingCourse.id) return false; // Skip self if editing
-      if (c.day_of_week !== courseDay) return false; // Only check same day
+      if (editingCourse && c.id === editingCourse.id) return false; // 编辑时跳过自己
+      if (c.day_of_week !== courseDay) return false; // 只比对同一天
 
       const [cStartH, cStartM] = c.start_time.split(':').map(Number);
       const [cEndH, cEndM] = c.end_time.split(':').map(Number);
       const cStartTotal = cStartH * 60 + cStartM;
       const cEndTotal = cEndH * 60 + cEndM;
 
-      // Check overlap: (StartA < EndB) and (EndA > StartB)
+      // 重叠判断：开始早于他人结束且结束晚于他人开始
       return startTotal < cEndTotal && endTotal > cStartTotal;
     });
 
@@ -284,7 +287,7 @@ const ScheduleContent = () => {
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        // Logged in user: Save to Supabase
+        // 已登录：存入 Supabase
         if (editingCourse) {
            const { error } = await supabase.from('courses').update({
             name: courseName.trim(),
@@ -309,10 +312,10 @@ const ScheduleContent = () => {
           if (error) throw error;
           showToast('课程已添加', 'success');
         }
-        // Refresh from Supabase
+        // 登录态：更新后再从 Supabase 刷新列表
         fetchCourses();
       } else {
-        // Guest user: Save to AsyncStorage
+        // 未登录：仅存本地 AsyncStorage
         const cached = await AsyncStorage.getItem('courses_data');
         let localCourses: Course[] = cached ? JSON.parse(cached) : [];
         
@@ -329,7 +332,7 @@ const ScheduleContent = () => {
           showToast('课程已更新 (本地)', 'success');
         } else {
           const newCourse: Course = {
-            id: Date.now(), // Use timestamp for local ID
+            id: Date.now(), // 本地用时间戳作为临时 ID
             name: courseName.trim(),
             location: courseLocation.trim(),
             day_of_week: courseDay,
@@ -358,6 +361,7 @@ const ScheduleContent = () => {
     }
   };
 
+  // 从 AsyncStorage 读取任务列表（离线数据源）
   const fetchTasks = async () => {
     setIsLoading(true);
     try {
@@ -370,6 +374,7 @@ const ScheduleContent = () => {
     setIsLoading(false);
   };
 
+  // 统一处理任务 / 截止项的校验与保存（本地为主，必要时同步云端）
   const handleSaveTask = async () => {
     if (editingTask?.is_course) {
       showAlert('提示', '课程无法在此编辑，请删除后重新添加');
@@ -394,10 +399,10 @@ const ScheduleContent = () => {
       is_deadline: isDeadlineMode,
     };
 
-    // Overlap Validation
+    // 重叠时间校验
     if (startTime && !isDeadlineMode) {
       const now = new Date();
-      // Allow 1 minute buffer
+      // 允许 1 分钟的缓冲，避免误判
       if (startTime.getTime() < now.getTime() - 60000) {
         showAlert('无法创建', '不能在过去的时间添加任务');
         return;
@@ -406,12 +411,12 @@ const ScheduleContent = () => {
       const startTimeDate = startTime;
       const endTimeDate = new Date(startTimeDate.getTime() + durationInSeconds * 1000);
       
-      // Check for exact start time duplicate
+      // 检查是否存在相同开始时间的任务
       const duplicateStartTask = tasks.find(t => {
         if (editingTask && t.id === editingTask.id) return false;
         if (!t.start_time) return false;
         const tDate = new Date(t.start_time);
-        // Check if same minute
+        // 精确到同一分钟
         return Math.abs(tDate.getTime() - startTimeDate.getTime()) < 60000; 
       });
 
@@ -481,7 +486,7 @@ const ScheduleContent = () => {
         currentTasks = [newTask, ...currentTasks];
         showToast('任务已创建', 'success');
         
-        // Clear draft and state after successful creation
+        // 创建成功后清空草稿与输入状态
         const defaultDraft = {
             title: '', description: '', estimatedDuration: '', startTime: null,
             tempHour: new Date().getHours(), tempMinute: 0, selectedColor: PALETTE[0]
@@ -500,6 +505,7 @@ const ScheduleContent = () => {
     }
   };
 
+  // 删除任务或课程（课程需要同时处理 Supabase 与本地缓存）
   const deleteTask = async (id: number) => {
     const isCourse = id < 0;
     const realId = isCourse ? -id : id;
@@ -570,13 +576,13 @@ const ScheduleContent = () => {
   const openCreateModal = (isDeadline = false) => {
     setIsDeadlineMode(isDeadline);
     setEditingTask(null);
-    // Restore draft
+    // 恢复草稿
     const draft = taskDraft.current;
     setTitle(draft.title);
     setDescription(draft.description);
     setEstimatedDuration(draft.estimatedDuration);
     
-    // Set default start time based on selectedDate
+    // 根据选中日期设置默认开始时间
     if (draft.startTime) {
       setStartTime(draft.startTime);
       setTempHour(draft.tempHour);
@@ -584,7 +590,7 @@ const ScheduleContent = () => {
     } else {
       const now = new Date();
       const defaultStart = new Date(selectedDate);
-      // If selected date is today, use current time. Otherwise use current time on that day.
+      // 若选中的是今天，用当前时间；否则用该日期的当前时刻
       defaultStart.setHours(now.getHours());
       defaultStart.setMinutes(now.getMinutes());
       
@@ -599,7 +605,7 @@ const ScheduleContent = () => {
 
   const openEditModal = (task: Task) => {
     setIsDeadlineMode(!!task.is_deadline);
-    // If we were in create mode (editingTask is null), save the draft
+    // 如果从“新建”切到“编辑”，先保存当前草稿
     if (!editingTask) {
        taskDraft.current = {
          title, description, estimatedDuration, startTime,
@@ -618,10 +624,10 @@ const ScheduleContent = () => {
 
   // --- 5. 数据处理与合并 ---
   const currentDayTasks = useMemo(() => {
-    // 1. 获取选中日期的星期几 (0-6, 0 is Sunday)
-    const dayOfWeek = selectedDate.getDay() || 7; // Convert to 1-7 (1=Monday, 7=Sunday)
+    // 1. 获取选中日期的星期几 (0-6，0 代表周日)
+    const dayOfWeek = selectedDate.getDay() || 7; // 转为 1-7（1=周一，7=周日）
     
-    // 2. 筛选当天的课程并转换为 Task 格式
+    // 2. 筛选当天的课程并转换为任务格式
     const todaysCourses = courses
       .filter(c => c.day_of_week === dayOfWeek)
       .map(c => {
@@ -648,18 +654,14 @@ const ScheduleContent = () => {
         } as Task;
       });
 
-    // 3. 筛选当天的任务 (这里假设任务没有具体日期，或者需要根据日期筛选)
-    // 目前 tasks 存储的是所有任务，如果需要按日期筛选，需要 task 有 date 字段
-    // 假设当前 tasks 是所有任务，我们暂时只展示所有任务，或者你可以添加日期筛选逻辑
-    // 这里为了演示，我们假设 tasks 是当天的或者不区分日期的待办
-    // 如果要严格按日期，需要在 Task 中添加 date 字段并筛选
-    // 现有的 Task 只有 start_time (ISO string)，我们可以用它来筛选
+    // 3. 筛选当天的任务（目前任务未区分日期，若需区分需扩展日期字段）
+    // 这里暂用 start_time 判断：无时间的任务每日显示；截止项日期>=当天则显示
     
     const todaysUserTasks = tasks.filter(t => {
       if (!t.start_time) return true; // 没有时间的任务显示在每一天 (或者只显示在今天，取决于需求)
       const taskDate = new Date(t.start_time);
       
-      // 如果是 Deadline，且截止日期在今天或之后，则显示在今天
+      // 如果是截止项，且截止日期在今天或之后，则显示在今天
       if (t.is_deadline) {
         const todayStart = new Date(selectedDate);
         todayStart.setHours(0, 0, 0, 0);
@@ -673,9 +675,9 @@ const ScheduleContent = () => {
              taskDate.getFullYear() === selectedDate.getFullYear();
     });
 
-    // 4. 合并并排序 (Deadline 优先，然后课程，最后任务)
+    // 4. 合并并排序（截止项优先，其次课程，再是任务）
     return [...todaysCourses, ...todaysUserTasks].sort((a, b) => {
-      // Deadline 置顶
+      // 截止项置顶
       if (a.is_deadline && !b.is_deadline) return -1;
       if (!a.is_deadline && b.is_deadline) return 1;
       
@@ -691,6 +693,7 @@ const ScheduleContent = () => {
   }, [tasks, courses, selectedDate]);
 
   // --- 6. 时间轴算法 ---
+  // 将当日的课程/任务映射到时间轴坐标，做分栏 + 重叠排布
   const processedTimelineTasks = useMemo(() => {
     const validTasks = currentDayTasks.filter(t => t.start_time && t.estimated_duration && !t.is_deadline);
     
@@ -712,14 +715,14 @@ const ScheduleContent = () => {
 
       layoutItems.sort((a, b) => a.startMinTotal - b.startMinTotal);
       
-      // Lane Algorithm for visual stacking with hierarchy
-      const levels: number[] = []; // Stores the end time (in minutes) of the last task in each level
+      // 车道算法：按层堆叠并记录每层结束时间
+      const levels: number[] = []; // 每一层最后一个任务的结束分钟数
 
       layoutItems.forEach((task, index) => {
         let assignedLevel = -1;
-        const buffer = 5; // 5 minutes buffer to treat "close" tasks as overlapping for visual separation
+        const buffer = 5; // 预留 5 分钟，将“很近”的任务视作重叠以便分层
 
-        // Try to find an available level
+        // 查找可用的层级
         for (let i = 0; i < levels.length; i++) {
           if (levels[i] + buffer <= task.startMinTotal) {
             assignedLevel = i;
@@ -728,23 +731,23 @@ const ScheduleContent = () => {
           }
         }
 
-        // If no level found, create a new one
+        // 如果没有可用层级，就新增一层
         if (assignedLevel === -1) {
           assignedLevel = levels.length;
           levels.push(task.endMinTotal);
         }
 
-        const offsetStep = 15; // Smaller step for tighter stacking
+        const offsetStep = 15; // 左偏移步进，控制堆叠紧凑度
         task.layout.widthPercent = 85; 
         task.layout.leftPercent = Math.min(assignedLevel * offsetStep, 60);
-        task.layout.zIndex = index + 1; // Ensure later tasks are visually on top
+        task.layout.zIndex = index + 1; // 保证后出现的任务显示在更上层
       });
 
-      // Map to global column
+      // 将局部布局映射到整列
       layoutItems.forEach(task => {
-        // Scale width to column width
+        // 宽度按列比例缩放
         task.layout.widthPercent = task.layout.widthPercent * (colWidthPct / 100);
-        // Offset is relative to column start + local offset scaled
+        // 左偏移 = 列起点 + 本地偏移缩放
         task.layout.leftPercent = colStartPct + task.layout.leftPercent * (colWidthPct / 100);
       });
 
@@ -754,7 +757,7 @@ const ScheduleContent = () => {
     const courses = validTasks.filter(t => t.is_course);
     const tasks = validTasks.filter(t => !t.is_course);
 
-    // Courses Left (0-50%), Tasks Right (50-100%)
+    // 左列课程（0-50%），右列任务（50-100%）
     const layoutCourses = processGroup(courses, 0, 50);
     const layoutTasks = processGroup(tasks, 50, 50);
 
@@ -860,13 +863,13 @@ const ScheduleContent = () => {
     </ThemedView>
   )};
 
+  // 时间轴视图：左侧课程、右侧任务，支持当前时间指示和拖拽滚动
   const renderTimeline = () => {
     const isToday = selectedDate.getDate() === new Date().getDate() && 
                     selectedDate.getMonth() === new Date().getMonth() && 
                     selectedDate.getFullYear() === new Date().getFullYear();
 
-    // Removed the restriction that only allows viewing today's timeline
-    // if (!isToday) { ... }
+    // 已取消“仅可查看今天时间轴”的限制；如需恢复，可在此添加判断
 
     const hours = Array.from({ length: END_HOUR - START_HOUR + 2 }, (_, i) => START_HOUR + i);
     
@@ -874,7 +877,7 @@ const ScheduleContent = () => {
 
     return (
       <View style={{ flex: 1 }}>
-        {/* Column Headers - Outside ScrollView */}
+        {/* 列头部（固定，不随滚动） */}
         <View style={{ flexDirection: 'row', marginLeft: 65, borderBottomWidth: 1, borderBottomColor: Colors[theme].icon + '10', backgroundColor: Colors[theme].background, zIndex: 5 }}>
           <View style={{ flex: 1, borderRightWidth: 1, borderRightColor: Colors[theme].icon + '10', backgroundColor: Colors[theme].tint + '05', paddingVertical: 8 }}>
             <ThemedText style={{ fontSize: 12, fontWeight: 'bold', opacity: 0.7, textAlign: 'center' }}>课程</ThemedText>
@@ -886,7 +889,7 @@ const ScheduleContent = () => {
 
         <ScrollView ref={timelineRef} style={styles.timelineContainer} contentContainerStyle={{ paddingTop: 10, paddingBottom: 50 }} showsVerticalScrollIndicator={false}>
           <View style={styles.timelineContent}>
-            {/* Column Backgrounds */}
+            {/* 列背景分区 */}
             <View style={{ position: 'absolute', top: 0, bottom: 0, left: 65, right: 0, flexDirection: 'row' }}>
               <View style={{ flex: 1, borderRightWidth: 1, borderRightColor: Colors[theme].icon + '10', backgroundColor: Colors[theme].tint + '05' }} />
               <View style={{ flex: 1 }} />
@@ -898,7 +901,7 @@ const ScheduleContent = () => {
                   <ThemedText style={styles.timelineHourText}>{hour}:00</ThemedText>
                   <View style={[styles.timelineLine, { backgroundColor: Colors[theme].icon + '15' }]} />
                 </View>
-                {/* Half-hour line */}
+                {/* 半小时刻度线 */}
                 <View style={[styles.timelineRow, { position: 'absolute', top: HOUR_HEIGHT / 2, left: 0, right: 0 }]}>
                   <ThemedText style={[styles.timelineHourText, { fontSize: 10, opacity: 0.2 }]}>{hour}:30</ThemedText>
                   <View style={[styles.timelineLine, { backgroundColor: Colors[theme].icon + '08' }]} />
@@ -923,7 +926,7 @@ const ScheduleContent = () => {
                   zIndex: 1000, 
                 }}
               >
-                {/* Skull on the time axis (centered in 65px width) */}
+                {/* 时间轴骷髅标记（居中 65px 区域） */}
                 <View style={{ 
                   width: 65, 
                   alignItems: 'center', 
@@ -935,7 +938,7 @@ const ScheduleContent = () => {
                   <Ionicons name="skull" size={20} color={theme === 'dark' ? '#fff' : '#000'} />
                 </View>
                 
-                {/* Line starting near the skull */}
+                {/* 从骷髅延伸的横线 */}
                 <View style={{ 
                   position: 'absolute', 
                   left: 50, 
@@ -949,7 +952,7 @@ const ScheduleContent = () => {
                   shadowRadius: 2,
                   elevation: 3
                 }}>
-                   {/* Name above the end of the line */}
+                   {/* 线尾名称标签 */}
                    <View style={{ position: 'absolute', right: 10, bottom: 4, backgroundColor: 'transparent' }}>
                       <ThemedText style={{ fontWeight: 'bold', fontSize: 12, color: theme === 'dark' ? '#fff' : '#000', textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: {width: 1, height: 1}, textShadowRadius: 2 }}>{deadline.title}</ThemedText>
                    </View>
@@ -964,13 +967,13 @@ const ScheduleContent = () => {
                   top: task.layout.top,
                   height: task.layout.height,
                   left: 65 + (SCREEN_WIDTH - 85) * (task.layout.leftPercent / 100),
-                  width: (SCREEN_WIDTH - 85) * (task.layout.widthPercent / 100) - 4, // Reduced width slightly for spacing
+                  width: (SCREEN_WIDTH - 85) * (task.layout.widthPercent / 100) - 4, // 略收窄以留出间距
                   zIndex: task.layout.zIndex || 1,
                   backgroundColor: task.color ? task.color : (task.is_course ? Colors[theme].tint : (task.status === 'completed' ? '#f0f0f0' : Colors[theme].tint)),
                   borderRadius: 2,
                   padding: 4,
                   ...(task.is_course ? {
-                    // Course: Solid flat style
+                    // 课程：纯色块风格
                     opacity: 0.9,
                     shadowColor: "#000",
                     shadowOffset: { width: 2, height: 2 },
@@ -978,7 +981,7 @@ const ScheduleContent = () => {
                     shadowRadius: 3,
                     elevation: 4,
                   } : {
-                    // Task: Sticky note style
+                    // 任务：便签风格
                     shadowColor: "#000",
                     shadowOffset: { width: 3, height: 3 },
                     shadowOpacity: 0.5,
@@ -1034,7 +1037,7 @@ const ScheduleContent = () => {
 
   const renderWeekStrip = () => {
     const today = new Date();
-    // Center the week strip around today (Today-3 to Today+3)
+    // 周视图以今天为中心（向前 3 天、向后 3 天）
     const weekDates = Array.from({ length: 7 }, (_, i) => {
       const d = new Date(today);
       d.setDate(today.getDate() - 3 + i);
@@ -1173,7 +1176,7 @@ const ScheduleContent = () => {
   const renderWeeklyScheduleModal = () => {
     const weekDays = ['一', '二', '三', '四', '五', '六', '日'];
     const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
-    const colWidth = (SCREEN_WIDTH - 40) / 7; // 40 for left time column width
+    const colWidth = (SCREEN_WIDTH - 40) / 7; // 左侧时间列预留 40 宽度
     const rowHeight = 50;
 
     return (
@@ -1427,7 +1430,7 @@ const ScheduleContent = () => {
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }} 
                       onPress={() => { 
                         setFabMenuVisible(false); 
-                        openCreateModal(true); // Open in Deadline Mode
+                        openCreateModal(true); // 直接以截止模式打开
                       }}
                     >
                       <View style={{ backgroundColor: Colors[theme].background, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, elevation: 2, shadowColor: '#000', shadowOffset: {width:0, height:1}, shadowOpacity:0.2, shadowRadius:2 }}>

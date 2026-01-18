@@ -3,9 +3,10 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { ChatMessage, sendToDeepSeek } from '@/utils/deepseek';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Modal, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Modal, Platform, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 
@@ -41,6 +42,37 @@ export default function SchoolScreen() {
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
   const insets = useSafeAreaInsets();
+
+  // DeepSeek Chat State
+  const [chatVisible, setChatVisible] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  // TODO: Replace with your actual API Key or load from secure storage
+  const [apiKey, setApiKey] = useState('sk-e480d707fb3b4ad9ad30cc408905708d'); 
+
+  const handleSend = async () => {
+    if (!inputMessage.trim()) return;
+    if (!apiKey.trim()) {
+      Alert.alert('提示', '请先设置 API Key');
+      return;
+    }
+
+    const userMsg: ChatMessage = { role: 'user', content: inputMessage };
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+    setInputMessage('');
+    setIsChatLoading(true);
+
+    try {
+      const response = await sendToDeepSeek(newMessages, apiKey);
+      setMessages([...newMessages, response]);
+    } catch (error) {
+      Alert.alert('错误', '无法连接到 DeepSeek API');
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
 
   // 初始化加载书签
   useEffect(() => {
@@ -128,9 +160,14 @@ export default function SchoolScreen() {
     <View style={styles.homeContainer}>
       <View style={styles.homeHeader}>
         <ThemedText type="subtitle" style={{ fontSize: 20 }}>常用网站</ThemedText>
-        <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.addButton}>
-          <IconSymbol name="plus" size={24} color={Colors[theme].tint} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <TouchableOpacity onPress={() => setChatVisible(true)} style={styles.addButton}>
+            <IconSymbol name="bubble.left.fill" size={24} color={Colors[theme].tint} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.addButton}>
+            <IconSymbol name="plus" size={24} color={Colors[theme].tint} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={[styles.searchBox, { backgroundColor: Colors[theme].icon + '15' }]}>
@@ -258,9 +295,73 @@ export default function SchoolScreen() {
     </View>
   );
 
+  const renderChat = () => (
+    <Modal visible={chatVisible} animationType="slide" presentationStyle="pageSheet">
+      <ThemedView style={{ flex: 1, paddingTop: 20 }}>
+        <View style={styles.chatHeader}>
+          <ThemedText type="subtitle">AI 学习助手</ThemedText>
+          <TouchableOpacity onPress={() => setChatVisible(false)} style={styles.closeButton}>
+            <IconSymbol name="xmark.circle.fill" size={30} color={Colors[theme].icon} />
+          </TouchableOpacity>
+        </View>
+
+        {!apiKey && (
+          <View style={styles.apiKeyContainer}>
+            <TextInput
+              style={[styles.apiKeyInput, { color: Colors[theme].text, borderColor: Colors[theme].icon }]}
+              placeholder="请输入 DeepSeek API Key"
+              placeholderTextColor={Colors[theme].icon}
+              value={apiKey}
+              onChangeText={setApiKey}
+              secureTextEntry
+            />
+          </View>
+        )}
+
+        <FlatList
+          data={messages}
+          keyExtractor={(_, index) => index.toString()}
+          contentContainerStyle={styles.chatList}
+          renderItem={({ item }) => (
+            <View style={[
+              styles.messageBubble,
+              item.role === 'user' ? styles.userBubble : styles.assistantBubble,
+              { backgroundColor: item.role === 'user' ? Colors[theme].tint : Colors[theme].icon + '20' }
+            ]}>
+              <ThemedText style={{ color: item.role === 'user' ? '#fff' : Colors[theme].text }}>
+                {item.content}
+              </ThemedText>
+            </View>
+          )}
+        />
+
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={100}>
+          <View style={[styles.inputContainer, { borderTopColor: Colors[theme].icon + '30', backgroundColor: Colors[theme].background }]}>
+            <TextInput
+              style={[styles.chatInput, { color: Colors[theme].text, backgroundColor: Colors[theme].icon + '15' }]}
+              placeholder="问点什么..."
+              placeholderTextColor={Colors[theme].icon}
+              value={inputMessage}
+              onChangeText={setInputMessage}
+              multiline
+            />
+            <TouchableOpacity onPress={handleSend} disabled={isChatLoading} style={styles.sendButton}>
+              {isChatLoading ? (
+                <ActivityIndicator color={Colors[theme].tint} />
+              ) : (
+                <IconSymbol name="arrow.up.circle.fill" size={32} color={Colors[theme].tint} />
+              )}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </ThemedView>
+    </Modal>
+  );
+
   return (
     <ThemedView style={[styles.container, { paddingTop: 60 }]}>
       {mode === 'home' ? renderHome() : renderBrowser()}
+      {renderChat()}
     </ThemedView>
   );
 }
@@ -296,4 +397,17 @@ const styles = StyleSheet.create({
   urlInput: { fontSize: 14, padding: 0 },
   webViewContainer: { flex: 1, position: 'relative' },
   loadingContainer: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center' },
+
+  // Chat Styles
+  chatHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#ccc' },
+  closeButton: { padding: 5 },
+  chatList: { padding: 20, gap: 15, paddingBottom: 40 },
+  messageBubble: { padding: 12, borderRadius: 16, maxWidth: '80%' },
+  userBubble: { alignSelf: 'flex-end', borderBottomRightRadius: 4 },
+  assistantBubble: { alignSelf: 'flex-start', borderBottomLeftRadius: 4 },
+  inputContainer: { flexDirection: 'row', padding: 10, alignItems: 'flex-end', gap: 10, borderTopWidth: StyleSheet.hairlineWidth },
+  chatInput: { flex: 1, borderRadius: 20, paddingHorizontal: 15, paddingVertical: 10, maxHeight: 100, fontSize: 16 },
+  sendButton: { padding: 5, marginBottom: 2 },
+  apiKeyContainer: { padding: 20, paddingBottom: 0 },
+  apiKeyInput: { borderWidth: 1, borderRadius: 10, padding: 12 },
 });
