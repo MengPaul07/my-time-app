@@ -1,125 +1,21 @@
+import React from 'react';
+import { ActivityIndicator, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+
 import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { supabase } from '@/utils/supabase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { ActivityIndicator, DeviceEventEmitter, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
-
-
-const isValidEmail = (email: string) => {
-  // 这是一个通用的邮箱验证正则，能匹配绝大多数标准邮箱格式
-  // 规则：[非空字符] @ [非空字符] . [非空字符]
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-};
+import { useAuth } from '@/hooks/use-auth';
 
 export default function AuthScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
   const colorScheme = useColorScheme();
-  const router = useRouter();
   const theme = colorScheme ?? 'light';
 
-  async function handleGuestLogin() {
-    try {
-      await AsyncStorage.setItem('guest_mode', 'true');
-      DeviceEventEmitter.emit('guest_mode_changed', true);
-      router.replace('/(tabs)');
-    } catch (e) {
-      console.error(e);
-    }
-  }
-
-  // 登录逻辑：使用邮箱和密码登录
-  // 注意：如果遇到连接问题，请检查 utils/supabase.ts 中的 URL 和 Key 是否正确
-  async function signInWithEmail() {
-    setErrorMsg('');
-    
-    if (!isValidEmail(email)) {
-      setErrorMsg('请输入正确的邮箱地址 (例如: user@example.com)');
-      return;
-    }
-    
-    if (!password) {
-      setErrorMsg('请输入密码');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // 向 Supabase 发起登录请求
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
-
-      if (error) {
-        console.error('Login error:', error);
-        if (error.message.includes('Invalid login credentials')) {
-          setErrorMsg('账号或密码错误');
-        } else {
-          setErrorMsg(error.message);
-        }
-      }
-    } catch (err: any) {
-      console.error('Unexpected login error:', err);
-      setErrorMsg(err.message || '请检查网络连接');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // 注册逻辑：创建新用户
-  // 注意：默认情况下，如果邮箱已注册，Supabase 为了安全（防止枚举攻击）仍会返回成功。
-  // 要让它返回 "User already registered" 错误，需在 Supabase Dashboard -> Settings -> Auth -> Security 中关闭 "Enable email enumeration protection"。
-  async function signUpWithEmail() {
-    setErrorMsg('');
-    
-    if (!isValidEmail(email)) {
-      setErrorMsg('请输入正确的邮箱地址 (例如: user@example.com)');
-      return;
-    }
-    
-    if (!password) {
-      setErrorMsg('请输入密码');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // 向 Supabase 发起注册请求
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-      });
-
-      if (error) {
-        console.error('Signup error:', error);
-        if (error.message.includes('User already registered')) {
-          setErrorMsg('该邮箱已被注册，请直接登录');
-        } else if (error.message.includes('Password should be at least')) {
-          setErrorMsg('密码长度需大于6位');
-        } else {
-          setErrorMsg(error.message);
-        }
-      } else if (!session) {
-        // 如果没有 session，说明需要邮箱验证
-        setErrorMsg('注册成功, 请检查你的邮箱进行验证！');
-      }
-    } catch (err: any) {
-      console.error('Unexpected signup error:', err);
-      setErrorMsg(err.message || '请检查网络连接');
-    } finally {
-      setLoading(false);
-    }
-  }
+  // 使用逻辑钩子处理 Auth 逻辑
+  const {
+    email, setEmail, password, setPassword, loading, errorMsg,
+    handleGuestLogin, signInWithEmail, signUpWithEmail
+  } = useAuth();
 
   return (
     <ThemedView style={styles.container}>
@@ -228,9 +124,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   errorText: {
-    color: '#c10000ff',
+    color: '#ff4444',
     textAlign: 'center',
     marginTop: 10,
-    fontSize:12,
+    fontSize: 12,
   },
 });

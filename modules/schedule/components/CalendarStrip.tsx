@@ -1,0 +1,145 @@
+import React, { useMemo } from 'react';
+import { ScrollView, TouchableOpacity, StyleSheet, View } from 'react-native';
+import { ThemedText } from '@/components/themed-text';
+import { ThemedView } from '@/components/themed-view';
+import { Colors } from '@/components/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+
+interface CalendarStripProps {
+  selectedDate: Date;
+  setSelectedDate: (date: Date) => void;
+  setShowDatePicker: (show: boolean) => void;
+  theme: 'light' | 'dark';
+}
+
+export const CalendarStrip: React.FC<CalendarStripProps> = ({
+  selectedDate,
+  setSelectedDate,
+  setShowDatePicker,
+  theme,
+}) => {
+  const dates = useMemo(() => {
+    const arr = [];
+    const today = new Date();
+    for (let i = -3; i <= 30; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      arr.push(d);
+    }
+    return arr;
+  }, []);
+
+  const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+
+  return (
+    <ThemedView style={[styles.container, { borderBottomColor: Colors[theme].icon + '20' }]}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.dateSelector} onPress={() => setShowDatePicker(true)}>
+          <ThemedText type="subtitle" style={{ fontSize: 18 }}>
+            {selectedDate.getFullYear()}年{selectedDate.getMonth() + 1}月
+          </ThemedText>
+          <Ionicons name="chevron-down" size={16} color={Colors[theme].text} style={{ marginLeft: 4 }} />
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          onPress={() => setSelectedDate(new Date())}
+          style={[styles.todayButton, { backgroundColor: Colors[theme].tint + '15' }]}
+        >
+          <ThemedText style={{ color: Colors[theme].tint, fontWeight: 'bold', fontSize: 12 }}>今天</ThemedText>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {dates.map((date, index) => {
+          const isSelected = date.getDate() === selectedDate.getDate() &&
+                            date.getMonth() === selectedDate.getMonth() &&
+                            date.getFullYear() === selectedDate.getFullYear();
+          const isToday = date.getDate() === new Date().getDate() &&
+                          date.getMonth() === new Date().getMonth() &&
+                          date.getFullYear() === new Date().getFullYear();
+          
+          return (
+            <TouchableOpacity
+              key={index}
+              onPress={() => setSelectedDate(date)}
+              style={[
+                styles.dateCard,
+                isSelected && { backgroundColor: Colors[theme].tint, borderColor: Colors[theme].tint }
+              ]}
+            >
+              <ThemedText style={[
+                styles.weekDay,
+                { color: isSelected ? '#fff' : Colors[theme].icon },
+                isToday && !isSelected && { color: Colors[theme].tint, fontWeight: 'bold' }
+              ]}>
+                {weekDays[date.getDay()]}
+              </ThemedText>
+              <ThemedText style={[
+                styles.dayNumber,
+                { color: isSelected ? '#fff' : Colors[theme].text }
+              ]}>
+                {date.getDate()}
+              </ThemedText>
+              {isToday && !isSelected && (
+                <View style={[styles.todayDot, { backgroundColor: Colors[theme].tint }]} />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    </ThemedView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    paddingTop: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 10,
+  },
+  dateSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  todayButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+  },
+  scrollContent: {
+    paddingHorizontal: 15,
+    paddingBottom: 15,
+  },
+  dateCard: {
+    width: 45,
+    height: 65,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 5,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  weekDay: {
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  dayNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  todayDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    position: 'absolute',
+    bottom: 6,
+  },
+});
