@@ -9,6 +9,7 @@ import { CustomAlert } from '@/components/ui/custom-alert';
 import { CustomThemeProvider } from '@/contexts/ThemeContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuthSession } from '@/modules/auth/hooks/use-auth-session';
+import { GlobalAIAssistant } from '@/modules/ai/components/GlobalAIAssistant';
 
 // 🛠️ 开发调试开关: 设置为 true 可跳过登录检查直接进入 App
 const DEV_BYPASS_AUTH = false; 
@@ -42,6 +43,10 @@ function RootLayoutNav() {
         <Stack.Screen name="auth" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
+      
+      {/* 全局 AI 悬浮球 */}
+      {initialized && <GlobalAIAssistant />}
+
       <StatusBar style="auto" />
       <CustomAlert 
         visible={alertConfig.visible} 

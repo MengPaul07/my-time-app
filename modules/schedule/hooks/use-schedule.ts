@@ -156,7 +156,9 @@ export function useSchedule(theme: 'light' | 'dark') {
       { text: '删除', style: 'destructive', onPress: async () => {
           try {
             if (isCourse) {
-              await deleteCourseStore(realId, !session?.user?.id);
+              // 检查 store 中实际存在的 ID (兼容 ID 为负数的情况)
+              const targetId = courses.some(c => c.id === id) ? id : realId;
+              await deleteCourseStore(targetId, !session?.user?.id);
             } else {
               await deleteTaskStore(realId, !session?.user?.id);
             }

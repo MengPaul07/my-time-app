@@ -83,11 +83,11 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
 
           {hours.map((hour) => (
             <View key={hour} style={{ height: HOUR_HEIGHT, position: 'relative' }}>
-              <View style={styles.row}>
+              <View style={[styles.row, { position: 'absolute', top: -10, height: 20, left: 0, right: 0 }]}>
                 <ThemedText style={styles.hourText}>{hour}:00</ThemedText>
                 <View style={[styles.line, { backgroundColor: Colors[theme].icon + '15' }]} />
               </View>
-              <View style={[styles.row, { position: 'absolute', top: HOUR_HEIGHT / 2, left: 0, right: 0 }]}>
+              <View style={[styles.row, { position: 'absolute', top: (HOUR_HEIGHT / 2) - 10, height: 20, left: 0, right: 0 }]}>
                 <ThemedText style={[styles.hourText, { fontSize: 10, opacity: 0.2 }]}>{hour}:30</ThemedText>
                 <View style={[styles.line, { backgroundColor: Colors[theme].icon + '08' }]} />
               </View>
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
   content: { position: 'relative' },
   backgroundGrids: { position: 'absolute', top: 0, bottom: 0, left: 65, right: 0, flexDirection: 'row' },
   gridCol: { flex: 1, borderRightWidth: 1 },
-  row: { flexDirection: 'row', alignItems: 'center', height: HOUR_HEIGHT },
+  row: { flexDirection: 'row', alignItems: 'center' },
   hourText: { width: 65, textAlign: 'center', fontSize: 12, opacity: 0.5 },
   line: { flex: 1, height: 1 },
   deadlineMarker: { position: 'absolute', left: 0, right: 0, height: 28, flexDirection: 'row', alignItems: 'center', zIndex: 1000 },

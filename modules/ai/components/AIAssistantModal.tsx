@@ -107,36 +107,54 @@ export const AIAssistantModal: React.FC<AIAssistantModalProps> = ({ visible, onC
               // --- 确认模式 ---
               <ScrollView style={styles.resultMode}>
                 <ThemedText style={{marginBottom: 10, opacity: 0.6}}>
-                    AI为您规划了 {suggestions.length} 个任务：
+                    AI为您规划了 {suggestions.length} 个操作：
                 </ThemedText>
                 
-                {suggestions.map((suggestion, index) => (
-                  <View key={index} style={[styles.suggestionCard, { borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 15 }]}>
-                    <View style={styles.row}>
-                      <ThemedText type="defaultSemiBold">任务 {index + 1}:</ThemedText>
-                      <ThemedText style={styles.value} numberOfLines={1}>{suggestion.title}</ThemedText>
-                    </View>
-                    
-                    {suggestion.description && (
+                {suggestions.map((suggestion, index) => {
+                  const actionText = suggestion.action === 'update' ? '修改' : suggestion.action === 'delete' ? '删除' : '新建';
+                  const typeText = suggestion.targetType === 'course' ? '课程' : '任务';
+                  return (
+                    <View key={index} style={[styles.suggestionCard, { borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 15 }]}>
                       <View style={styles.row}>
-                        <ThemedText type="defaultSemiBold">描述:</ThemedText>
-                        <ThemedText style={styles.value}>{suggestion.description}</ThemedText>
+                        <ThemedText type="defaultSemiBold" style={{color: suggestion.action === 'delete' ? '#FF3B30' : suggestion.action === 'update' ? '#007AFF' : undefined}}>
+                           [{actionText}{typeText}]
+                        </ThemedText>
+                        <ThemedText style={styles.value} numberOfLines={1}>
+                            {suggestion.title || suggestion.originalTitle}
+                        </ThemedText>
                       </View>
-                    )}
+                      
+                      {suggestion.action !== 'delete' && (
+                        <>
+                          {suggestion.description && (
+                            <View style={styles.row}>
+                              <ThemedText type="defaultSemiBold">描述:</ThemedText>
+                              <ThemedText style={styles.value}>{suggestion.description}</ThemedText>
+                            </View>
+                          )}
 
-                    <View style={styles.row}>
-                      <ThemedText type="defaultSemiBold">时间:</ThemedText>
-                      <ThemedText style={styles.value}>
-                        {suggestion.startTime ? new Date(suggestion.startTime).toLocaleString() : '浮动任务'}
-                      </ThemedText>
-                    </View>
+                          <View style={styles.row}>
+                            <ThemedText type="defaultSemiBold">时间:</ThemedText>
+                            <ThemedText style={styles.value}>
+                              {suggestion.startTime ? new Date(suggestion.startTime).toLocaleString() : '浮动'}
+                            </ThemedText>
+                          </View>
 
-                    <View style={styles.row}>
-                      <ThemedText type="defaultSemiBold">时长:</ThemedText>
-                      <ThemedText style={styles.value}>{suggestion.estimatedDuration} 分钟</ThemedText>
+                          <View style={styles.row}>
+                            <ThemedText type="defaultSemiBold">时长:</ThemedText>
+                            <ThemedText style={styles.value}>{suggestion.estimatedDuration} 分钟</ThemedText>
+                          </View>
+                        </>
+                      )}
+                      
+                      {suggestion.action === 'update' && (
+                         <ThemedText style={{fontSize: 12, opacity: 0.5, marginTop: 4}}>
+                            将修改原项目 "{suggestion.originalTitle}"
+                         </ThemedText>
+                      )}
                     </View>
-                  </View>
-                ))}
+                  );
+                })}
 
                 <View style={styles.actionButtons}>
                   <TouchableOpacity style={[styles.actionBtn, styles.cancelBtn]} onPress={handleCancelPrediction}>

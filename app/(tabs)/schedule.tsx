@@ -30,10 +30,16 @@ import { START_HOUR, END_HOUR, HOUR_HEIGHT } from '@/constants/config';
 // 导入逻辑钩子
 import { useSchedule } from '@/modules/schedule/hooks/use-schedule';
 
+import * as ImagePicker from 'expo-image-picker';
+import { parseScheduleFromImage } from '@/modules/ai/services/scheduleParser';
+import { useTaskStore } from '@/modules/schedule/store/useTaskStore';
+import { useUserStore } from '@/modules/auth/store/useUserStore';
+
 const ScheduleContent = () => {
   const theme = useColorScheme() ?? 'light';
   const [aiModalVisible, setAiModalVisible] = React.useState(false);
   
+
   // 使用逻辑钩子
   const {
     tasks, courses, selectedDate, setSelectedDate, isLoading, viewMode, setViewMode,
@@ -52,6 +58,52 @@ const ScheduleContent = () => {
     openCreateModal, openEditModal,
     currentDayTasks, processedTimelineTasks, processedDeadlines
   } = useSchedule(theme);
+
+  const { addCourse } = useTaskStore();
+  const { session } = useUserStore();
+
+  const handleImportSchedule = async () => {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+          setToastConfig({ visible: true, message: '需要相册权限', type: 'error' });
+          return; 
+      }
+      
+      try {
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: false, 
+            quality: 0.5,
+            base64: true,
+        });
+
+        if (!result.canceled && result.assets && result.assets.length > 0) {
+            const uri = result.assets[0].uri;
+            setToastConfig({ visible: true, message: 'AI 正在解析课表(DeepSeek)...', type: 'info' });
+
+            // 调用服务
+            const parsedCourses = await parseScheduleFromImage(uri);
+            
+            if (!parsedCourses || parsedCourses.length === 0) {
+                setToastConfig({ visible: true, message: '未能识别出有效课程', type: 'error' });
+                return;
+            }
+
+            let count = 0;
+            for (const c of parsedCourses) {
+                if (c.name) {
+                    await addCourse(c, session?.user?.id || null);
+                    count++;
+                }
+            }
+            setToastConfig({ visible: true, message: `成功导入 ${count} 门课程`, type: 'success' });
+        }
+      } catch (e: any) {
+          console.error(e);
+          setToastConfig({ visible: true, message: `解析失败: ${e.message}`, type: 'error' });
+      }
+  };
+
 
   // --- 生命周期 ---
 
@@ -133,6 +185,7 @@ const ScheduleContent = () => {
         onAddDeadline={() => openCreateModal(true)}
         onAddTask={() => openCreateModal(false)}
         onAiTask={() => setAiModalVisible(true)}
+        onImportSchedule={handleImportSchedule}
         theme={theme}
       />
 
@@ -177,7 +230,7 @@ const ScheduleContent = () => {
 
       <CourseModal 
         visible={courseModalVisible} onClose={() => setCourseModalVisible(false)} onSave={handleSaveCourse}
-        onDelete={() => editingCourse && deleteItem(-editingCourse.id)}
+        onDelete={() => editingCourse && deleteItem(editingCourse.id < 0 ? editingCourse.id : -editingCourse.id)}
         courseName={courseName} setCourseName={setCourseName} courseLocation={courseLocation} setCourseLocation={setCourseLocation}
         courseDay={courseDay} setCourseDay={setCourseDay} courseStartHour={courseStartHour} courseStartMinute={courseStartMinute}
         courseEndHour={courseEndHour} courseEndMinute={courseEndMinute}

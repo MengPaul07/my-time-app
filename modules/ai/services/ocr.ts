@@ -4,6 +4,7 @@
  */
 export interface LocalOCRService {
   recognizeText(imageUri: string): Promise<string>;
+  recognizeWithPos(imageUri: string): Promise<any>;
 }
 
 const BAIDU_API_KEY = process.env.EXPO_PUBLIC_BAIDU_API_KEY;
@@ -15,6 +16,13 @@ const BAIDU_SECRET_KEY = process.env.EXPO_PUBLIC_BAIDU_SECRET_KEY;
  */
 export const BaiduOCRService: LocalOCRService = {
   recognizeText: async (imageUri: string) => {
+    // 复用 recognizeWithPos 的逻辑，只提取文字
+    const result = await BaiduOCRService.recognizeWithPos(imageUri);
+    if (!result || !result.words_result) return "";
+    return result.words_result.map((item: any) => item.words).join('\n');
+  },
+
+  recognizeWithPos: async (imageUri: string) => {
     if (!BAIDU_API_KEY || !BAIDU_SECRET_KEY) {
       throw new Error('请在 .env 中配置 EXPO_PUBLIC_BAIDU_API_KEY 和 EXPO_PUBLIC_BAIDU_SECRET_KEY');
     }
@@ -45,9 +53,10 @@ export const BaiduOCRService: LocalOCRService = {
         encoding: 'base64', 
       });
       
-      // 3. 调用通用文字识别 API (标准版)
+      // 3. 调用通用文字识别 API (标准版) - 包含位置信息
       console.log('[BaiduOCR] 正在识别文字 (Payload size: ' + base64Img.length + ')...');
       
+      // 使用 general 接口，默认包含位置信息 (location -> {top, left, width, height})
       const targetUrl = `https://aip.baidubce.com/rest/2.0/ocr/v1/general?access_token=${accessToken}`;
   
       const ocrResponse = await fetch(targetUrl, {
@@ -75,13 +84,8 @@ export const BaiduOCRService: LocalOCRService = {
         throw new Error(`百度 OCR 错误: ${ocrResult.error_msg}`);
       }
 
-      if (!ocrResult.words_result) {
-        return "";
-      }
-
-      const textLines = ocrResult.words_result.map((item: any) => item.words).join('\n');
-      console.log('[BaiduOCR] 识别成功，长度:', textLines.length);
-      return textLines;
+      console.log('[BaiduOCR] 识别成功, 词条数:', ocrResult.words_result_num);
+      return ocrResult; // 返回完整 JSON，包含 words_result 和 location
 
     } catch (error) {
       console.error('[BaiduOCR] Failed:', error);

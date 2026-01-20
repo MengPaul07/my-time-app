@@ -11,6 +11,7 @@ interface FloatingActionButtonProps {
   onAddDeadline: () => void;
   onAddTask: () => void;
   onAiTask?: () => void;
+  onImportSchedule?: () => void;
   theme: 'light' | 'dark';
 }
 
@@ -21,6 +22,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   onAddDeadline,
   onAddTask,
   onAiTask,
+  onImportSchedule,
   theme,
 }) => {
   return (
@@ -37,6 +39,18 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
           </TouchableOpacity>
           
           <View style={styles.fabMenuContainer}>
+             {onImportSchedule && (
+               <TouchableOpacity 
+                 style={styles.fabMenuItem} 
+                 onPress={() => { setFabMenuVisible(false); onImportSchedule(); }}
+               >
+                  <ThemedText style={styles.fabMenuText}>导入 AI 课表</ThemedText>
+                  <View style={[styles.fabMenuIcon, { backgroundColor: '#5856D6' }]}>
+                    <Ionicons name="scan" size={22} color="#fff" />
+                  </View>
+               </TouchableOpacity>
+             )}
+
              {onAiTask && (
                <TouchableOpacity 
                  style={styles.fabMenuItem} 
