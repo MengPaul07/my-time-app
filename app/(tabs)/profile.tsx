@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
@@ -18,6 +18,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useProfile } from '@/hooks/use-profile';
 
 export default function ProfileScreen() {
+  const router = useRouter(); // <--- Add Hook
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
 
@@ -78,6 +79,27 @@ export default function ProfileScreen() {
           weeklyStats={weeklyStats}
           theme={theme}
         />
+
+        {/* --- [Temporary Test Entry] --- */}
+        <TouchableOpacity 
+          style={{ 
+            marginTop: 20, 
+            padding: 15, 
+            backgroundColor: Colors[theme].card, 
+            borderRadius: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderWidth: 1,
+            borderColor: Colors[theme].border
+          }}
+          onPress={() => router.push('/photo-test')}
+        >
+          <Ionicons name="camera-outline" size={20} color={Colors[theme].text} style={{ marginRight: 8 }} />
+          <ThemedText>测试照片解析 (Photo AI)</ThemedText>
+        </TouchableOpacity>
+        {/* ------------------------------ */}
+
       </ScrollView>
 
       <ProfileSettingsModal

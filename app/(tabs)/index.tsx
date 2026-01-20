@@ -5,17 +5,14 @@ import Animated, { interpolate, useAnimatedStyle } from 'react-native-reanimated
 
 // --- Features & Components ---
 import { TimerHeader } from '@/modules/timer/components/TimerHeader';
-import { BoatScene } from '@/modules/timer/components/BoatScene';
 import { TimerControls } from '@/modules/timer/components/TimerControls';
 import CircularSlider from '@/modules/timer/components/CircularSlider';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { CustomAlert } from '@/components/ui/custom-alert';
-import { Colors } from '@/components/constants/theme';
 
 // --- Contexts & Hooks ---
 import { useTheme } from '@/contexts/ThemeContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTimer } from '@/modules/timer/hooks/use-timer';
 
 // ===================================
@@ -23,15 +20,16 @@ import { useTimer } from '@/modules/timer/hooks/use-timer';
 // ===================================
 const { width } = Dimensions.get('window');
 const CIRCLE_SIZE = width * 0.8;
-const TRACK_WIDTH = width - 80;
 
 // ===================================
 // 主组件 (HomeScreen)
 // ===================================
 export default function HomeScreen() {
-  const { toggleTheme } = useTheme();
-  const colorScheme = useColorScheme();
-  const theme = colorScheme ?? 'light';
+  const { toggleTheme, activeTheme, theme: themeMode } = useTheme();
+  
+  const theme = themeMode;
+  const colors = activeTheme.colors[themeMode];
+  const AnimationComponent = activeTheme.AnimationComponent;
 
   // 使用逻辑钩子
   const {
@@ -58,29 +56,6 @@ export default function HomeScreen() {
     ],
   }));
 
-  const boatSceneStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(animState.value, [0.5, 1], [0, 1]),
-    transform: [{ translateY: interpolate(animState.value, [0, 1], [20, 0]) }],
-    zIndex: isSessionActive ? 10 : 0,
-  }));
-
-  const boatStyle = useAnimatedStyle(() => {
-    const translateX = interpolate(smoothProgress.value, [0, 1], [-TRACK_WIDTH/2 + 20, TRACK_WIDTH/2 - 20]);
-    return {
-      transform: [
-        { translateX },
-        { translateY: bobAnim.value },
-        { rotate: `${rockAnim.value}deg` }
-      ],
-    };
-  });
-  
-  const waveStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: interpolate(waveAnim.value, [0, 1], [0, -200]) }],
-    flexDirection: 'row',
-    width: TRACK_WIDTH * 2, 
-  }));
-
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -105,7 +80,7 @@ export default function HomeScreen() {
 
       {isGuest && (
         <ThemedView style={styles.guestNotice}>
-          <ThemedText style={[styles.guestNoticeText, { color: Colors[theme].text }]}>
+          <ThemedText style={[styles.guestNoticeText, { color: colors.text }]}>
             游客模式无法上传数据，如需请在“我的-设置”中退出注册
           </ThemedText>
         </ThemedView>
@@ -123,11 +98,14 @@ export default function HomeScreen() {
             />
           </Animated.View>
 
-          <BoatScene
+          <AnimationComponent
             theme={theme}
-            boatStyle={boatStyle}
-            boatSceneStyle={boatSceneStyle}
-            waveStyle={waveStyle}
+            animState={animState}
+            smoothProgress={smoothProgress}
+            waveAnim={waveAnim}
+            rockAnim={rockAnim}
+            bobAnim={bobAnim}
+            isSessionActive={isSessionActive}
           />
 
           <Animated.View style={[styles.timeTextContainer, timeTextStyle]}>
