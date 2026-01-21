@@ -1,9 +1,15 @@
 import { sendToDeepSeek } from '@/utils/deepseek';
+import { getAppSecret } from '@/utils/secrets';
 import { SCHEDULER_SYSTEM_PROMPT } from '../prompts/schedulerPrompts';
 import { AIParseResult, AIScheduleSuggestion } from '../types';
 
 const fetchAIAnalysis = async (userInput: string, contextData: any[] = []): Promise<AIParseResult[]> => {
   const currentDate = new Date().toString(); 
+  const apiKey = await getAppSecret('DEEPSEEK_API_KEY');
+
+  if (!apiKey) {
+      throw new Error('未配置 DeepSeek API Key (既不在 Supabase 也不在局部变量)');
+  }
   
   // 简化的 context 字符串
   const contextStr = JSON.stringify(contextData.map(item => ({
@@ -22,7 +28,7 @@ const fetchAIAnalysis = async (userInput: string, contextData: any[] = []): Prom
   ];
 
   try {
-    const aiMessage = await sendToDeepSeek(messages);
+    const aiMessage = await sendToDeepSeek(messages, apiKey);
     const content = aiMessage.content;
     
     let jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();

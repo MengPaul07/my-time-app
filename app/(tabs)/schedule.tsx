@@ -38,6 +38,7 @@ import { useUserStore } from '@/modules/auth/store/useUserStore';
 const ScheduleContent = () => {
   const theme = useColorScheme() ?? 'light';
   const [aiModalVisible, setAiModalVisible] = React.useState(false);
+  const [isImporting, setIsImporting] = React.useState(false);
   
 
   // 使用逻辑钩子
@@ -63,9 +64,11 @@ const ScheduleContent = () => {
   const { session } = useUserStore();
 
   const handleImportSchedule = async () => {
+      if (isImporting) return;
+
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-          setToastConfig({ visible: true, message: '需要相册权限', type: 'error' });
+          setToastConfig({ visible: true, message: '需要相册权限', type: 'error' ,duration:50000});
           return; 
       }
       
@@ -79,13 +82,14 @@ const ScheduleContent = () => {
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const uri = result.assets[0].uri;
-            setToastConfig({ visible: true, message: 'AI 正在解析课表(DeepSeek)...', type: 'info' });
+            setIsImporting(true);
+            setToastConfig({ visible: true, message: 'AI 正在解析课表(耗时较长请耐心等待)...', type: 'info', duration: 60000 }); // 增加停留时间
 
             // 调用服务
             const parsedCourses = await parseScheduleFromImage(uri);
             
             if (!parsedCourses || parsedCourses.length === 0) {
-                setToastConfig({ visible: true, message: '未能识别出有效课程', type: 'error' });
+                setToastConfig({ visible: true, message: '未能识别出有效课程', type: 'error', duration: 3000 });
                 return;
             }
 
@@ -96,11 +100,13 @@ const ScheduleContent = () => {
                     count++;
                 }
             }
-            setToastConfig({ visible: true, message: `成功导入 ${count} 门课程`, type: 'success' });
+            setToastConfig({ visible: true, message: `成功导入 ${count} 门课程`, type: 'success', duration: 3000 });
         }
       } catch (e: any) {
           console.error(e);
-          setToastConfig({ visible: true, message: `解析失败: ${e.message}`, type: 'error' });
+          setToastConfig({ visible: true, message: `解析失败: ${e.message}`, type: 'error', duration: 3000 });
+      } finally {
+         setIsImporting(false);
       }
   };
 
@@ -132,6 +138,7 @@ const ScheduleContent = () => {
         visible={toastConfig.visible} 
         message={toastConfig.message} 
         type={toastConfig.type as any} 
+        duration={toastConfig.duration}
         onHide={() => setToastConfig(p => ({ ...p, visible: false }))} 
       />
       
@@ -186,6 +193,7 @@ const ScheduleContent = () => {
         onAddTask={() => openCreateModal(false)}
         onAiTask={() => setAiModalVisible(true)}
         onImportSchedule={handleImportSchedule}
+        isImporting={isImporting}
         theme={theme}
       />
 
@@ -206,15 +214,16 @@ const ScheduleContent = () => {
                    setToastConfig({
                      visible: true,
                      message: `已跳转至 ${taskDate.getMonth()+1}月${taskDate.getDate()}日`,
-                     type: 'info'
+                     type: 'info',
+                     duration: 3000
                    });
                 }, 300);
              } else {
-                setToastConfig({ visible: true, message: '任务添加成功', type: 'success' });
+                setToastConfig({ visible: true, message: '任务添加成功', type: 'success', duration: 3000 });
              }
            } else {
              // 浮动任务
-             setToastConfig({ visible: true, message: '浮动任务已添加', type: 'success' });
+             setToastConfig({ visible: true, message: '浮动任务已添加', type: 'success', duration: 3000 });
            }
         }}
       />

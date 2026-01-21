@@ -31,7 +31,7 @@ export function useSchedule(theme: 'light' | 'dark') {
   const [courseModalVisible, setCourseModalVisible] = useState(false);
   const [weeklyModalVisible, setWeeklyModalVisible] = useState(false);
   const [fabMenuVisible, setFabMenuVisible] = useState(false);
-  const [toastConfig, setToastConfig] = useState({ visible: false, message: '', type: 'info' as 'success' | 'error' | 'info' });
+  const [toastConfig, setToastConfig] = useState({ visible: false, message: '', type: 'info' as 'success' | 'error' | 'info' ,duration:0});
   const [alertConfig, setAlertConfig] = useState({ visible: false, title: '', message: '', buttons: [] as any[] });
 
   // --- 任务表单状态 ---
@@ -230,7 +230,7 @@ export function useSchedule(theme: 'light' | 'dark') {
     });
   };
   const closeAlert = () => setAlertConfig(prev => ({ ...prev, visible: false }));
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => setToastConfig({ visible: true, message, type });
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => setToastConfig({ visible: true, message, type ,duration:0});
 
   // ---------------------------------
   // 6. 数据处理与计算 (Computed Data)

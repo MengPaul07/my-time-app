@@ -4,7 +4,9 @@ import { Task, Course } from '@/types/app';
 import { taskService } from '@/modules/schedule/services/taskService';
 import { courseService } from '@/modules/schedule/services/courseService';
 
-const ENABLE_SUPABASE = false; // 强制本地模式 (Supabase已保留但失效)
+// To switch between Local Backend and Supabase, update the flag in taskService.ts and courseService.ts
+// For this store, we just need to ensure we are using the "cloud" logic (which now delegates to service)
+const ENABLE_CLOUD = true; 
 
 interface TaskState {
   tasks: Task[];
@@ -44,15 +46,25 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   fetchData: async (userId, date) => {
     set({ isLoading: true });
     try {
-      if (ENABLE_SUPABASE && userId) {
-        // 利用 Promise.all 并行请求
+      // 1. 如果是 Guest Mode (无 userId)，强制走本地存储，避免发送 invalid UUID 到 Supabase
+      if (!userId) {
+        const cachedTasks = await AsyncStorage.getItem('tasks_data');
+        const cachedCourses = await AsyncStorage.getItem('courses_data');
+        set({ 
+            tasks: cachedTasks ? JSON.parse(cachedTasks) : [], 
+            courses: cachedCourses ? JSON.parse(cachedCourses) : [] 
+        });
+      } 
+      // 2. 如果是登录用户且启用了 Cloud，走 Supabase
+      else if (ENABLE_CLOUD) {
         const [tasks, courses] = await Promise.all([
           taskService.fetchTasks(userId, date),
           courseService.fetchCourses(userId)
         ]);
         set({ tasks, courses });
-      } else {
-        // 游客模式 / 本地模式
+      } 
+      // 3. Fallback (从未发生，除非手动改代码)
+      else {
         const cachedTasks = await AsyncStorage.getItem('tasks_data');
         const cachedCourses = await AsyncStorage.getItem('courses_data');
         if (cachedTasks) set({ tasks: JSON.parse(cachedTasks) });
@@ -68,14 +80,15 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   updateTask: async (taskId, updates, isGuest) => {
     const { tasks } = get();
     try {
-      if (ENABLE_SUPABASE && !isGuest) {
-        await taskService.updateTask(taskId, updates);
+      if (ENABLE_CLOUD && !isGuest) {
+         await taskService.updateTask(taskId, updates);
       }
       
+      // Optimistic Update
       const newTasks = tasks.map((t) => (t.id === taskId ? { ...t, ...updates } : t));
       set({ tasks: newTasks });
       
-      if (!ENABLE_SUPABASE || isGuest) {
+      if (!ENABLE_CLOUD || isGuest) {
         await AsyncStorage.setItem('tasks_data', JSON.stringify(newTasks));
       }
     } catch (error) {
@@ -86,7 +99,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   addTask: async (taskData, userId) => {
     const { tasks } = get();
     try {
-      if (ENABLE_SUPABASE && userId) {
+      if (userId && ENABLE_CLOUD) {
         const newTask = await taskService.addTask(taskData, userId);
         set({ tasks: [newTask, ...tasks] });
       } else {
@@ -98,25 +111,27 @@ export const useTaskStore = create<TaskState>((set, get) => ({
         };
         const newTasks = [newTask, ...tasks];
         set({ tasks: newTasks });
-        await AsyncStorage.setItem('tasks_data', JSON.stringify(newTasks));
+        if (!ENABLE_CLOUD || !userId) {
+          await AsyncStorage.setItem('tasks_data', JSON.stringify(newTasks));
+        }
       }
     } catch (error) {
       console.error('Error adding task:', error);
-      throw error; // Rethrow so UI knows it failed
+      throw error; 
     }
   },
 
   deleteTask: async (taskId, isGuest) => {
     const { tasks } = get();
     try {
-      if (ENABLE_SUPABASE && !isGuest) {
+      if (ENABLE_CLOUD && !isGuest) {
         await taskService.deleteTask(taskId);
       }
       
       const newTasks = tasks.filter((t) => t.id !== taskId);
       set({ tasks: newTasks });
       
-      if (!ENABLE_SUPABASE || isGuest) {
+      if (!ENABLE_CLOUD || isGuest) {
         await AsyncStorage.setItem('tasks_data', JSON.stringify(newTasks));
       }
     } catch (error) {
@@ -127,18 +142,20 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   addCourse: async (courseData, userId) => {
     const { courses } = get();
     try {
-      if (ENABLE_SUPABASE && userId) {
+      if (userId && ENABLE_CLOUD) {
         const newCourse = await courseService.addCourse(courseData, userId);
         set({ courses: [...courses, newCourse] });
       } else {
         const newCourse: Course = {
-          id: -Date.now(), // 负数ID区别于Task，或者保持原逻辑
+          id: -Date.now(), 
           user_id: undefined,
           ...courseData
         };
         const newCourses = [...courses, newCourse];
         set({ courses: newCourses });
-        await AsyncStorage.setItem('courses_data', JSON.stringify(newCourses));
+        if (!ENABLE_CLOUD || !userId) {
+          await AsyncStorage.setItem('courses_data', JSON.stringify(newCourses));
+        }
       }
     } catch (error) {
       console.error('Error adding course:', error);
@@ -148,14 +165,14 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   updateCourse: async (courseId, updates, isGuest) => {
     const { courses } = get();
     try {
-      if (ENABLE_SUPABASE && !isGuest) {
+      if (ENABLE_CLOUD && !isGuest) {
         await courseService.updateCourse(courseId, updates);
       }
       
       const newCourses = courses.map((c) => (c.id === courseId ? { ...c, ...updates } : c));
       set({ courses: newCourses });
       
-      if (!ENABLE_SUPABASE || isGuest) {
+      if (!ENABLE_CLOUD || isGuest) {
         await AsyncStorage.setItem('courses_data', JSON.stringify(newCourses));
       }
     } catch (error) {
@@ -166,14 +183,14 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   deleteCourse: async (courseId, isGuest) => {
     const { courses } = get();
     try {
-      if (ENABLE_SUPABASE && !isGuest) {
+      if (ENABLE_CLOUD && !isGuest) {
         await courseService.deleteCourse(courseId);
       }
       
       const newCourses = courses.filter((c) => c.id !== courseId);
       set({ courses: newCourses });
       
-      if (!ENABLE_SUPABASE || isGuest) {
+      if (!ENABLE_CLOUD || isGuest) {
         await AsyncStorage.setItem('courses_data', JSON.stringify(newCourses));
       }
     } catch (error) {

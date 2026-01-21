@@ -12,6 +12,7 @@ interface FloatingActionButtonProps {
   onAddTask: () => void;
   onAiTask?: () => void;
   onImportSchedule?: () => void;
+  isImporting?: boolean;
   theme: 'light' | 'dark';
 }
 
@@ -23,6 +24,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   onAddTask,
   onAiTask,
   onImportSchedule,
+  isImporting = false,
   theme,
 }) => {
   return (
@@ -41,12 +43,19 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
           <View style={styles.fabMenuContainer}>
              {onImportSchedule && (
                <TouchableOpacity 
-                 style={styles.fabMenuItem} 
-                 onPress={() => { setFabMenuVisible(false); onImportSchedule(); }}
+                 style={[styles.fabMenuItem, isImporting && { opacity: 0.5 }]} 
+                 onPress={() => { 
+                   if (isImporting) return;
+                   setFabMenuVisible(false); 
+                   onImportSchedule(); 
+                 }}
+                 disabled={isImporting}
                >
-                  <ThemedText style={styles.fabMenuText}>导入 AI 课表</ThemedText>
-                  <View style={[styles.fabMenuIcon, { backgroundColor: '#5856D6' }]}>
-                    <Ionicons name="scan" size={22} color="#fff" />
+                  <ThemedText style={styles.fabMenuText}>
+                    {isImporting ? 'AI 解析中...' : '导入 AI 课表'}
+                  </ThemedText>
+                  <View style={[styles.fabMenuIcon, { backgroundColor: isImporting ? '#999' : '#5856D6' }]}>
+                    <Ionicons name={isImporting ? "hourglass-outline" : "scan"} size={22} color="#fff" />
                   </View>
                </TouchableOpacity>
              )}

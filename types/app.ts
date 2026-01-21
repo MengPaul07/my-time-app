@@ -66,6 +66,7 @@ export interface ToastConfig {
   visible: boolean;
   message: string;
   type: 'success' | 'error' | 'info';
+  duration?: number;
 }
 
 export interface AlertButton {

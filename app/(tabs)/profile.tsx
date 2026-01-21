@@ -79,27 +79,6 @@ export default function ProfileScreen() {
           weeklyStats={weeklyStats}
           theme={theme}
         />
-
-        {/* --- [Temporary Test Entry] --- */}
-        <TouchableOpacity 
-          style={{ 
-            marginTop: 20, 
-            padding: 15, 
-            backgroundColor: Colors[theme].card, 
-            borderRadius: 12,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderWidth: 1,
-            borderColor: Colors[theme].border
-          }}
-          onPress={() => router.push('/photo-test')}
-        >
-          <Ionicons name="camera-outline" size={20} color={Colors[theme].text} style={{ marginRight: 8 }} />
-          <ThemedText>测试照片解析 (Photo AI)</ThemedText>
-        </TouchableOpacity>
-        {/* ------------------------------ */}
-
       </ScrollView>
 
       <ProfileSettingsModal

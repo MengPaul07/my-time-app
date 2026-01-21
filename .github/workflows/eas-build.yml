@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+name: EAS Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build'
+        required: true
+        default: 'android'
+        type: choice
+        options:
+          - android
+          - ios
+          - all
+      profile:
+        description: 'Build profile'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+          - production
+          - development
+
+jobs:
+  build:
+    name: EAS Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for EXPO_TOKEN
+        run: |
+          if [ -z "${{ secrets.EXPO_TOKEN }}" ]; then
+            echo "You must provide an EXPO_TOKEN secret linked to your project's Expo account in this repo's settings."
+            echo "https://github.com/settings/tokens"
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
+          cache: yarn
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install dependencies
+        run: yarn install
+
+      - name: Build on EAS
+        run: eas build --platform ${{ inputs.platform }} --profile ${{ inputs.profile }} --non-interactive

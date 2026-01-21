@@ -1,5 +1,6 @@
 import { BaiduOCRService } from './ocr';
 import { sendToDeepSeek, ChatMessage } from '@/utils/deepseek';
+import { getAppSecret } from '@/utils/secrets';
 import { SCHEDULE_OCR_PROMPT } from '../prompts/schedulerPrompts';
 import { Course } from '@/types/app';
 
@@ -12,6 +13,11 @@ export const parseScheduleFromImage = async (imageUri: string): Promise<Omit<Cou
   }
 
   console.log(`[ScheduleParser] OCR Success, words count: ${ocrResult.words_result_num}. Calling DeepSeek...`);
+
+  const apiKey = await getAppSecret('DEEPSEEK_API_KEY');
+  if (!apiKey) {
+      throw new Error('未配置 DeepSeek API Key (既不在 Supabase 也不在局部变量)');
+  }
 
   // Limit OCR data size if necessary, DeepSeek context window is large but good to be safe.
   // We send the whole words_result specifically because layout depends on all items.
@@ -27,7 +33,7 @@ export const parseScheduleFromImage = async (imageUri: string): Promise<Omit<Cou
 
   // 3. Call DeepSeek
   try {
-    const response = await sendToDeepSeek(messages);
+    const response = await sendToDeepSeek(messages, apiKey);
     
     if (!response || !response.content) {
       throw new Error("DeepSeek 返回内容为空");

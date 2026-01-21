@@ -20,7 +20,7 @@ const initialState: TimerState = {
   totalDuration: 1500,
   isActive: false,
   isSessionActive: false,
-  currentTaskId: null,
+  currentTask: null,
   mode: 'focus',
 };
 
@@ -34,7 +34,6 @@ export const useTimerStore = create<TimerStore>((set) => ({
   setIsSessionActive: (isSessionActive) => set({ isSessionActive }),
   setCurrentTask: (currentTask) => set({ 
     currentTask, 
-    currentTaskId: currentTask?.id ?? null 
   }),
   setMode: (mode) => set({ mode }),
 
