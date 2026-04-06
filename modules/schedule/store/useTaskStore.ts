@@ -7,6 +7,68 @@ import { courseService } from '@/modules/schedule/services/courseService';
 // To switch between Local Backend and Supabase, update the flag in taskService.ts and courseService.ts
 // For this store, we just need to ensure we are using the "cloud" logic (which now delegates to service)
 const ENABLE_CLOUD = true; 
+const DAILY_STATUS_REFRESH_KEY = 'schedule:last_daily_status_refresh';
+const PENDING_STATUS: Task['status'] = 'pending';
+
+const getDateKey = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const refreshTaskStatusIfNewDay = async (tasks: Task[], userId: string | null) => {
+  const today = getDateKey();
+  const lastRefreshDay = await AsyncStorage.getItem(DAILY_STATUS_REFRESH_KEY);
+  if (lastRefreshDay === today) {
+    return tasks;
+  }
+
+  const shouldResetTasks = tasks.filter((task) => !task.is_course && task.status !== 'pending');
+  if (shouldResetTasks.length === 0) {
+    await AsyncStorage.setItem(DAILY_STATUS_REFRESH_KEY, today);
+    return tasks;
+  }
+
+  if (ENABLE_CLOUD && userId) {
+    const resetResults = await Promise.allSettled(
+      shouldResetTasks.map((task) => taskService.updateTask(task.id, { status: PENDING_STATUS }))
+    );
+    const resetTaskIds = new Set<number>();
+    resetResults.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        resetTaskIds.add(shouldResetTasks[index].id);
+      }
+    });
+
+    if (resetTaskIds.size === 0) {
+      return tasks;
+    }
+
+    const refreshedTasks = tasks.map((task) =>
+      resetTaskIds.has(task.id)
+        ? {
+            ...task,
+            status: PENDING_STATUS,
+          }
+        : task
+    );
+    await AsyncStorage.setItem(DAILY_STATUS_REFRESH_KEY, today);
+    return refreshedTasks;
+  }
+
+  const refreshedTasks = tasks.map((task) =>
+    !task.is_course && task.status !== 'pending'
+      ? {
+          ...task,
+          status: PENDING_STATUS,
+        }
+      : task
+  );
+  await AsyncStorage.setItem('tasks_data', JSON.stringify(refreshedTasks));
+  await AsyncStorage.setItem(DAILY_STATUS_REFRESH_KEY, today);
+  return refreshedTasks;
+};
 
 interface TaskState {
   tasks: Task[];
@@ -46,14 +108,15 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   fetchData: async (userId, date) => {
     set({ isLoading: true });
     try {
+      let nextTasks: Task[] = [];
+      let nextCourses: Course[] = [];
+
       // 1. 如果是 Guest Mode (无 userId)，强制走本地存储，避免发送 invalid UUID 到 Supabase
       if (!userId) {
         const cachedTasks = await AsyncStorage.getItem('tasks_data');
         const cachedCourses = await AsyncStorage.getItem('courses_data');
-        set({ 
-            tasks: cachedTasks ? JSON.parse(cachedTasks) : [], 
-            courses: cachedCourses ? JSON.parse(cachedCourses) : [] 
-        });
+        nextTasks = cachedTasks ? JSON.parse(cachedTasks) : [];
+        nextCourses = cachedCourses ? JSON.parse(cachedCourses) : [];
       } 
       // 2. 如果是登录用户且启用了 Cloud，走 Supabase
       else if (ENABLE_CLOUD) {
@@ -61,15 +124,19 @@ export const useTaskStore = create<TaskState>((set, get) => ({
           taskService.fetchTasks(userId, date),
           courseService.fetchCourses(userId)
         ]);
-        set({ tasks, courses });
+        nextTasks = tasks;
+        nextCourses = courses;
       } 
       // 3. Fallback (从未发生，除非手动改代码)
       else {
         const cachedTasks = await AsyncStorage.getItem('tasks_data');
         const cachedCourses = await AsyncStorage.getItem('courses_data');
-        if (cachedTasks) set({ tasks: JSON.parse(cachedTasks) });
-        if (cachedCourses) set({ courses: JSON.parse(cachedCourses) });
+        nextTasks = cachedTasks ? JSON.parse(cachedTasks) : [];
+        nextCourses = cachedCourses ? JSON.parse(cachedCourses) : [];
       }
+
+      const refreshedTasks = await refreshTaskStatusIfNewDay(nextTasks, userId);
+      set({ tasks: refreshedTasks, courses: nextCourses });
     } catch (error) {
       console.error('Error fetching task store data:', error);
     } finally {

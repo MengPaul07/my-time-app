@@ -30,7 +30,7 @@ export default function StandingScreen() {
   return (
     <ThemedView style={styles.container}>
       <ThemedView style={styles.header}>
-        <ThemedText type="subtitle" style={{ fontSize: 20 }}>专注榜</ThemedText>
+        <ThemedText type="subtitle" style={styles.pageTitle}>专注榜</ThemedText>
         <TouchableOpacity onPress={refresh} style={{ padding: 8 }}>
           <IconSymbol name="arrow.clockwise" size={20} color={Colors[theme].text} />
         </TouchableOpacity>
@@ -88,6 +88,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
   },
   refreshButton: {
     paddingVertical: 8,

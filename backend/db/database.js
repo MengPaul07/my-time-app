@@ -29,8 +29,22 @@ function initDb() {
       is_course BOOLEAN DEFAULT 0,
       location TEXT,
       color TEXT,
-      is_deadline BOOLEAN DEFAULT 0
+      is_deadline BOOLEAN DEFAULT 0,
+      is_recurring BOOLEAN DEFAULT 0,
+      recurring_days TEXT
     )`);
+
+    db.run(`ALTER TABLE tasks ADD COLUMN is_recurring BOOLEAN DEFAULT 0`, (err) => {
+      if (err && !String(err.message).includes('duplicate column name')) {
+        console.error('Failed to add is_recurring column:', err.message);
+      }
+    });
+
+    db.run(`ALTER TABLE tasks ADD COLUMN recurring_days TEXT`, (err) => {
+      if (err && !String(err.message).includes('duplicate column name')) {
+        console.error('Failed to add recurring_days column:', err.message);
+      }
+    });
 
     // Courses Table
     db.run(`CREATE TABLE IF NOT EXISTS courses (

@@ -16,11 +16,19 @@ export const taskService = {
         const day = String(date.getDate()).padStart(2, '0');
         const isoDate = `${year}-${month}-${day}`;
         
-        const url = `${BACKEND_URL}/api/tasks?userId=${userId}&date=${isoDate}`;
+        const url = `${BACKEND_URL}/api/tasks?userId=${userId}&date=${isoDate}&includeRecurring=true`;
         
         const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch tasks');
-        return await response.json() as Task[];
+        const rows = await response.json() as Task[];
+        return rows.map((task: any) => ({
+          ...task,
+          recurring_days: Array.isArray(task.recurring_days)
+            ? task.recurring_days
+            : typeof task.recurring_days === 'string'
+              ? JSON.parse(task.recurring_days || '[]')
+              : [],
+        })) as Task[];
     } else {
         // --- Supabase Mode ---
         const startOfDay = new Date(date);
@@ -28,16 +36,25 @@ export const taskService = {
         const endOfDay = new Date(date);
         endOfDay.setHours(23, 59, 59, 999);
 
+        const startIso = startOfDay.toISOString();
+        const endIso = endOfDay.toISOString();
+
         const { data, error } = await supabase
           .from('tasks')
           .select('*')
           .eq('user_id', userId)
-          .gte('start_time', startOfDay.toISOString())
-          .lte('start_time', endOfDay.toISOString())
+          .or(`and(start_time.gte.${startIso},start_time.lte.${endIso}),is_recurring.eq.true`)
           .order('start_time', { ascending: true });
 
         if (error) throw error;
-        return data as Task[];
+        return (data || []).map((task: any) => ({
+          ...task,
+          recurring_days: Array.isArray(task.recurring_days)
+            ? task.recurring_days
+            : typeof task.recurring_days === 'string'
+              ? JSON.parse(task.recurring_days || '[]')
+              : [],
+        })) as Task[];
     }
   },
 
@@ -46,6 +63,7 @@ export const taskService = {
         // --- Backend Mode ---
         const payload = {
             ...task,
+          recurring_days: task.recurring_days || [],
             user_id: userId,
             status: 'pending',
             actual_duration: 0

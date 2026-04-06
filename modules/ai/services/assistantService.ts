@@ -4,6 +4,7 @@ import { sendToDeepSeek } from '@/utils/deepseek';
 
 // 临时方案：完全开启客户端 AI 模式，不再请求本地后端
 const USE_CLIENT_SIDE_AI = true;
+const EXCLUDE_CP_ENGLISH_CONTEXT = true;
 
 const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
@@ -18,6 +19,24 @@ interface AssistantResponse {
   reply: string;
   actions: AssistantAction[];
 }
+
+const formatLocalDateTime = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const h = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    const s = String(date.getSeconds()).padStart(2, '0');
+    return `${y}-${m}-${d}T${h}:${mm}:${s}`;
+};
+
+const getTimePeriodLabel = (hour: number) => {
+    if (hour < 6) return '凌晨';
+    if (hour < 12) return '上午';
+    if (hour < 14) return '中午';
+    if (hour < 19) return '下午';
+    return '晚上';
+};
 
 // 缓存 Key 避免每次都请求数据库
 let cachedDeepSeekKey: string | null = null;
@@ -46,7 +65,17 @@ async function getDeepSeekKey() {
 }
 
 export const assistantService = {
-    async processUserRequest(userInput: string, tasksContext: string, coursesContext: string, history: Array<{ role: 'user' | 'assistant', content: string }> = []): Promise<AssistantResponse> {
+        async processUserRequest(
+            userInput: string,
+            tasksContext: string,
+            coursesContext: string,
+            healthPanelsContext: string,
+            schedulingBackgroundContext: string,
+            cpContext: string,
+            englishContext: string,
+            goalsContext: string,
+            history: Array<{ role: 'user' | 'assistant', content: string }> = []
+        ): Promise<AssistantResponse> {
     
         if (USE_CLIENT_SIDE_AI) {
             // --- 客户端直连模式 (任何人可用) ---
@@ -57,11 +86,27 @@ export const assistantService = {
                 }
 
                 // 1. 组装 Prompt
-                const currentDate = new Date().toLocaleDateString('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                const now = new Date();
+                const currentDate = now.toLocaleDateString('zh-CN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                const currentDateTime = formatLocalDateTime(now);
+                const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                const currentHour = String(now.getHours());
+                const timePeriod = getTimePeriodLabel(now.getHours());
+                const cpContextForPrompt = EXCLUDE_CP_ENGLISH_CONTEXT ? '已临时禁用（用于排查超时）' : (cpContext || '暂无算法成长数据');
+                const englishContextForPrompt = EXCLUDE_CP_ENGLISH_CONTEXT ? '已临时禁用（用于排查超时）' : (englishContext || '暂无英语成长数据');
                 const systemPrompt = ASSISTANT_SYSTEM_PROMPT
                     .replace('{{currentDate}}', currentDate)
+                    .replace('{{currentDateTime}}', currentDateTime)
+                    .replace('{{currentTime}}', currentTime)
+                    .replace('{{currentHour}}', currentHour)
+                    .replace('{{timePeriod}}', timePeriod)
                     .replace('{{tasksContext}}', tasksContext || "暂无今日任务")
-                    .replace('{{coursesContext}}', coursesContext || "暂无今日课程");
+                    .replace('{{coursesContext}}', coursesContext || "暂无今日课程")
+                    .replace('{{healthPanelsContext}}', healthPanelsContext || "暂无健康状态面板数据")
+                    .replace('{{schedulingBackgroundContext}}', schedulingBackgroundContext || "暂无排程背景设置")
+                    .replace('{{cpContext}}', cpContextForPrompt)
+                    .replace('{{englishContext}}', englishContextForPrompt)
+                    .replace('{{goalsContext}}', goalsContext || "暂无目标模块数据");
 
                 const messages = [
                     { role: 'system' as const, content: systemPrompt },
@@ -106,6 +151,11 @@ export const assistantService = {
                         userInput,
                         tasksContext,
                         coursesContext,
+                        healthPanelsContext,
+                        schedulingBackgroundContext,
+                        cpContext,
+                        englishContext,
+                        goalsContext,
                         history
                     }),
                 });

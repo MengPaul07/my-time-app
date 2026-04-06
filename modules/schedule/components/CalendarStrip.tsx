@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ScrollView, TouchableOpacity, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -18,16 +18,33 @@ export const CalendarStrip: React.FC<CalendarStripProps> = ({
   setShowDatePicker,
   theme,
 }) => {
+  const [dayAnchor, setDayAnchor] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDayAnchor((prev) => {
+        const now = new Date();
+        const changed =
+          prev.getFullYear() !== now.getFullYear() ||
+          prev.getMonth() !== now.getMonth() ||
+          prev.getDate() !== now.getDate();
+        return changed ? now : prev;
+      });
+    }, 60 * 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   const dates = useMemo(() => {
     const arr = [];
-    const today = new Date();
+    const today = dayAnchor;
     for (let i = -3; i <= 30; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       arr.push(d);
     }
     return arr;
-  }, []);
+  }, [dayAnchor]);
 
   const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
 
@@ -51,12 +68,13 @@ export const CalendarStrip: React.FC<CalendarStripProps> = ({
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {dates.map((date, index) => {
+          const now = dayAnchor;
           const isSelected = date.getDate() === selectedDate.getDate() &&
                             date.getMonth() === selectedDate.getMonth() &&
                             date.getFullYear() === selectedDate.getFullYear();
-          const isToday = date.getDate() === new Date().getDate() &&
-                          date.getMonth() === new Date().getMonth() &&
-                          date.getFullYear() === new Date().getFullYear();
+          const isToday = date.getDate() === now.getDate() &&
+                          date.getMonth() === now.getMonth() &&
+                          date.getFullYear() === now.getFullYear();
           
           return (
             <TouchableOpacity

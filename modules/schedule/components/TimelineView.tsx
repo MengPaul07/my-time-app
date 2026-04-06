@@ -137,7 +137,11 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
               <ThemedText style={styles.taskLabel} numberOfLines={1}>{task.title}</ThemedText>
               {task.layout.height > 40 && (
                 <ThemedText style={styles.taskSubLabel} numberOfLines={1}>
-                  {task.is_course ? task.location : `${Math.floor(task.estimated_duration / 60)}min`}
+                  {task.is_course
+                    ? (task.location || '课程')
+                    : task.location
+                      ? `${task.location} · ${Math.max(1, Math.floor(task.estimated_duration / 60))}min`
+                      : `${Math.max(1, Math.floor(task.estimated_duration / 60))}min`}
                 </ThemedText>
               )}
             </TouchableOpacity>

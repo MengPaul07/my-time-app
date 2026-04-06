@@ -24,6 +24,8 @@ interface TaskModalProps {
   setTitle: (t: string) => void;
   description: string;
   setDescription: (d: string) => void;
+  location: string;
+  setLocation: (l: string) => void;
   estimatedDuration: string;
   setEstimatedDuration: (ed: string) => void;
   startTime: Date | null;
@@ -32,6 +34,10 @@ interface TaskModalProps {
   selectedColor: string;
   setSelectedColor: (c: string) => void;
   isDeadlineMode: boolean;
+  isRecurring: boolean;
+  setIsRecurring: (v: boolean) => void;
+  recurringDays: number[];
+  setRecurringDays: (days: number[]) => void;
   editingTask: Task | null;
   theme: 'light' | 'dark';
   onDelete?: () => void;
@@ -45,6 +51,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   setTitle,
   description,
   setDescription,
+  location,
+  setLocation,
   estimatedDuration,
   setEstimatedDuration,
   startTime,
@@ -53,11 +61,32 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   selectedColor,
   setSelectedColor,
   isDeadlineMode,
+  isRecurring,
+  setIsRecurring,
+  recurringDays,
+  setRecurringDays,
   editingTask,
   theme,
   onDelete,
 }) => {
   const placeholderColor = Colors[theme].text + '99';
+  const weekDays = [
+    { label: '一', value: 1 },
+    { label: '二', value: 2 },
+    { label: '三', value: 3 },
+    { label: '四', value: 4 },
+    { label: '五', value: 5 },
+    { label: '六', value: 6 },
+    { label: '日', value: 7 },
+  ];
+
+  const toggleRecurringDay = (day: number) => {
+    if (recurringDays.includes(day)) {
+      setRecurringDays(recurringDays.filter(d => d !== day));
+      return;
+    }
+    setRecurringDays([...recurringDays, day].sort((a, b) => a - b));
+  };
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>
@@ -92,6 +121,15 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               placeholderTextColor={placeholderColor}
             />
 
+            <ThemedText style={styles.label}>地点（可选）</ThemedText>
+            <TextInput
+              style={[styles.input, { color: Colors[theme].text, borderColor: Colors[theme].icon + '40' }]}
+              value={location}
+              onChangeText={setLocation}
+              placeholder="例如：图书馆三楼 / 教学楼 A403"
+              placeholderTextColor={placeholderColor}
+            />
+
             {!isDeadlineMode && (
               <>
                 <ThemedText style={styles.label}>预计时长 (分钟)</ThemedText>
@@ -103,6 +141,51 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                   placeholder="5 - 300"
                   placeholderTextColor={placeholderColor}
                 />
+              </>
+            )}
+
+            {!isDeadlineMode && (
+              <>
+                <ThemedText style={styles.label}>周期任务</ThemedText>
+                <TouchableOpacity
+                  style={[
+                    styles.recurringToggle,
+                    { borderColor: Colors[theme].icon + '40', backgroundColor: isRecurring ? Colors[theme].tint + '15' : 'transparent' }
+                  ]}
+                  onPress={() => setIsRecurring(!isRecurring)}
+                >
+                  <Ionicons
+                    name={isRecurring ? 'checkbox' : 'square-outline'}
+                    size={20}
+                    color={isRecurring ? Colors[theme].tint : Colors[theme].icon}
+                  />
+                  <ThemedText style={styles.recurringText}>设为周期性任务</ThemedText>
+                </TouchableOpacity>
+
+                {isRecurring && (
+                  <View style={styles.weekdayWrap}>
+                    {weekDays.map(day => {
+                      const selected = recurringDays.includes(day.value);
+                      return (
+                        <TouchableOpacity
+                          key={day.value}
+                          style={[
+                            styles.weekdayChip,
+                            {
+                              borderColor: selected ? Colors[theme].tint : Colors[theme].icon + '40',
+                              backgroundColor: selected ? Colors[theme].tint : 'transparent',
+                            },
+                          ]}
+                          onPress={() => toggleRecurringDay(day.value)}
+                        >
+                          <ThemedText style={{ color: selected ? '#fff' : Colors[theme].text, fontWeight: '600' }}>
+                            周{day.label}
+                          </ThemedText>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
               </>
             )}
 
@@ -179,6 +262,32 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderRadius: 12, padding: 12, fontSize: 16 },
   rowInputs: { flexDirection: 'row', marginBottom: 15 },
   dateButton: { borderWidth: 1, borderRadius: 12, padding: 12, alignItems: 'center' },
+  recurringToggle: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  recurringText: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  weekdayWrap: {
+    marginTop: 10,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  weekdayChip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
+    marginBottom: 8,
+  },
   colorPalette: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginVertical: 10 },
   colorOption: { width: 36, height: 36, borderRadius: 18 },
   selectedColor: { borderWidth: 3, borderColor: '#fff' },

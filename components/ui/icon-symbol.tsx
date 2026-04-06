@@ -27,7 +27,6 @@ const MAPPING = {
   'calendar': 'calendar-today',
   'sun.max.fill': 'wb-sunny',
   'moon.fill': 'nightlight-round',
-  'graduationcap.fill': 'school',
   'plus': 'add',
   'arrow.right.circle.fill': 'arrow-forward',
   'globe': 'language',
@@ -37,6 +36,10 @@ const MAPPING = {
   'bubble.left.fill': 'chat',
   'xmark.circle.fill': 'close',
   'arrow.up.circle.fill': 'arrow-upward',
+  'heart.fill': 'favorite',
+  'book.fill': 'menu-book',
+  'checkmark.circle.fill': 'check-circle',
+  'circle': 'radio-button-unchecked',
 } as IconMapping;
 
 /**

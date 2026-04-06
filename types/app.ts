@@ -21,6 +21,8 @@ export interface Task {
   location?: string;
   color?: string;
   is_deadline?: boolean;
+  is_recurring?: boolean;
+  recurring_days?: number[];
 }
 
 // --- 课程相关 (Courses) ---

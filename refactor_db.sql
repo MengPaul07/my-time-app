@@ -35,6 +35,10 @@ ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS location text;
 ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS color text;
 -- is_deadline?: boolean
 ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS is_deadline boolean DEFAULT false;
+-- is_recurring?: boolean
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS is_recurring boolean DEFAULT false;
+-- recurring_days?: number[]
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS recurring_days integer[] DEFAULT '{}';
 
 -- ==========================================
 -- 2. Courses 表 (对应 types/app.ts 中的 Course 接口)

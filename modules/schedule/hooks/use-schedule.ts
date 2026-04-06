@@ -38,9 +38,12 @@ export function useSchedule(theme: 'light' | 'dark') {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [taskLocation, setTaskLocation] = useState('');
   const [estimatedDuration, setEstimatedDuration] = useState('');
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [isDeadlineMode, setIsDeadlineMode] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringDays, setRecurringDays] = useState<number[]>([]);
   const [selectedColor, setSelectedColor] = useState(PALETTE[0]);
   const [showDatePicker, setShowDatePicker] = useState(false);
   
@@ -75,15 +78,22 @@ export function useSchedule(theme: 'light' | 'dark') {
   // ---------------------------------
   const handleSaveTask = async () => {
     if (!title.trim()) { showAlert('提示', '请输入任务名称'); return; }
+    if (!isDeadlineMode && isRecurring && recurringDays.length === 0) {
+      showAlert('提示', '请选择至少一个重复日（周一到周日）');
+      return;
+    }
 
     const durationInSeconds = isDeadlineMode ? 0 : (estimatedDuration ? parseInt(estimatedDuration) * 60 : 0);
     const taskData = {
       title: title.trim(),
       description: description.trim(),
+      location: taskLocation.trim(),
       estimated_duration: durationInSeconds,
       start_time: startTime ? startTime.toISOString() : null,
       color: isDeadlineMode ? '#000000' : selectedColor,
       is_deadline: isDeadlineMode,
+      is_recurring: !isDeadlineMode && isRecurring,
+      recurring_days: !isDeadlineMode && isRecurring ? recurringDays : [],
     };
 
     try {
@@ -178,8 +188,10 @@ export function useSchedule(theme: 'light' | 'dark') {
   // ---------------------------------
   const openCreateModal = (isDeadline = false) => {
     setIsDeadlineMode(isDeadline);
+    setIsRecurring(false);
+    setRecurringDays([]);
     setEditingTask(null);
-    setTitle(''); setDescription(''); setEstimatedDuration('');
+    setTitle(''); setDescription(''); setTaskLocation(''); setEstimatedDuration('');
     const now = new Date();
     const defaultStart = new Date(selectedDate);
     defaultStart.setHours(now.getHours()); defaultStart.setMinutes(now.getMinutes());
@@ -194,7 +206,11 @@ export function useSchedule(theme: 'light' | 'dark') {
     }
     setIsDeadlineMode(!!task.is_deadline);
     setEditingTask(task); setTitle(task.title); setDescription(task.description || '');
+    setTaskLocation(task.location || '');
     setEstimatedDuration(task.estimated_duration ? (task.estimated_duration / 60).toString() : '');
+    setIsRecurring(!!task.is_recurring);
+    const normalizedRecurringDays = Array.isArray(task.recurring_days) ? task.recurring_days : [];
+    setRecurringDays(normalizedRecurringDays);
     if (task.start_time) setStartTime(new Date(task.start_time));
     setSelectedColor(task.color || PALETTE[0]);
     setModalVisible(true);
@@ -249,13 +265,32 @@ export function useSchedule(theme: 'light' | 'dark') {
       } as Task;
     });
 
-    const todaysUserTasks = tasks.filter(t => {
-      if (!t.start_time) return true;
-      const taskDate = new Date(t.start_time);
-      return taskDate.getDate() === selectedDate.getDate() &&
-             taskDate.getMonth() === selectedDate.getMonth() &&
-             taskDate.getFullYear() === selectedDate.getFullYear();
-    });
+    const selectedDayOfWeek = selectedDate.getDay() || 7;
+    const todaysUserTasks = tasks
+      .filter(t => {
+        if (t.is_recurring && Array.isArray(t.recurring_days)) {
+          return t.recurring_days.includes(selectedDayOfWeek);
+        }
+        if (!t.start_time) return true;
+        const taskDate = new Date(t.start_time);
+        return taskDate.getDate() === selectedDate.getDate() &&
+               taskDate.getMonth() === selectedDate.getMonth() &&
+               taskDate.getFullYear() === selectedDate.getFullYear();
+      })
+      .map(t => {
+        if (!(t.is_recurring && t.start_time && Array.isArray(t.recurring_days))) {
+          return t;
+        }
+
+        const baseStartTime = new Date(t.start_time);
+        const mappedStart = new Date(selectedDate);
+        mappedStart.setHours(baseStartTime.getHours(), baseStartTime.getMinutes(), 0, 0);
+
+        return {
+          ...t,
+          start_time: mappedStart.toISOString(),
+        };
+      });
 
     return [...todaysCourses, ...todaysUserTasks].sort((a, b) => {
       if (a.is_deadline && !b.is_deadline) return -1;
@@ -362,7 +397,9 @@ export function useSchedule(theme: 'light' | 'dark') {
     toastConfig, setToastConfig, alertConfig, closeAlert,
     // 任务表单
     editingTask, title, setTitle, description, setDescription, estimatedDuration, setEstimatedDuration,
+    taskLocation, setTaskLocation,
     startTime, setStartTime, isDeadlineMode, selectedColor, setSelectedColor, showDatePicker, setShowDatePicker,
+    isRecurring, setIsRecurring, recurringDays, setRecurringDays,
     // 课程表单
     editingCourse, courseName, setCourseName, courseLocation, setCourseLocation, courseDay, setCourseDay,
     courseStartHour, setCourseStartHour, courseStartMinute, setCourseStartMinute,

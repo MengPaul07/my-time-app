@@ -9,6 +9,43 @@ import { useUserStore } from '@/modules/auth/store/useUserStore';
 import { useTaskStore } from '@/modules/schedule/store/useTaskStore';
 
 const MIN_MINUTES = 25;
+const HEALTH_RECORD_PREFIX = 'health_record_';
+const HEALTH_STATUS_HISTORY_KEY = 'health_status_history';
+
+const DEFAULT_LEARNING_STATE = {
+  overall: 0,
+  courseStudy: 0,
+  acmStudy: 0,
+  projectStudy: 0,
+  englishStudy: 0,
+  researchStudy: 0,
+};
+
+const clampScore = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
+
+const getDateKey = (date = new Date()) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const inferLearningChannel = (title = ''): keyof typeof DEFAULT_LEARNING_STATE => {
+  const text = title.toLowerCase();
+  if (/(acm|icpc|codeforces|leetcode|算法|刷题|vp)/.test(text)) {
+    return 'acmStudy';
+  }
+  if (/(项目|project|开发|coding|工程)/.test(text)) {
+    return 'projectStudy';
+  }
+  if (/(英语|english|单词|听力|阅读)/.test(text)) {
+    return 'englishStudy';
+  }
+  if (/(科研|research|论文|paper)/.test(text)) {
+    return 'researchStudy';
+  }
+  return 'courseStudy';
+};
 
 export function useTimer() {
   // 1. 仓库状态 (Store State)
@@ -29,8 +66,102 @@ export function useTimer() {
     message: '',
     buttons: [] as any[],
   });
+  const [focusFeedback, setFocusFeedback] = useState<{
+    visible: boolean;
+    title: string;
+    summary: string;
+    learningDelta: number;
+    energyDelta: number;
+    fatigueDelta: number;
+  }>({
+    visible: false,
+    title: '',
+    summary: '',
+    learningDelta: 0,
+    energyDelta: 0,
+    fatigueDelta: 0,
+  });
 
   const timerRef = useRef<any>(null);
+
+  const syncHealthPanelAfterFocus = async (focusSeconds: number) => {
+    if (focusSeconds <= 0) return;
+
+    try {
+      const now = new Date();
+      const dateKey = getDateKey(now);
+      const todayRecordKey = `${HEALTH_RECORD_PREFIX}${dateKey}`;
+
+      const [todayRaw, historyRaw] = await Promise.all([
+        AsyncStorage.getItem(todayRecordKey),
+        AsyncStorage.getItem(HEALTH_STATUS_HISTORY_KEY),
+      ]);
+
+      const focusMinutes = Math.max(1, Math.round(focusSeconds / 60));
+      const gain = Math.max(1, Math.min(12, Math.round(focusMinutes / 10)));
+      const channel = inferLearningChannel(currentTask?.title || '');
+
+      const todayRecord = todayRaw ? JSON.parse(todayRaw) : null;
+      const history = historyRaw ? JSON.parse(historyRaw) : [];
+      const latest = Array.isArray(history) && history.length > 0 ? history[0] : null;
+
+      const learningBase = {
+        ...DEFAULT_LEARNING_STATE,
+        ...(todayRecord?.learningState || {}),
+      };
+      const nextLearningState = {
+        ...learningBase,
+        [channel]: clampScore((learningBase as any)[channel] + gain),
+      } as typeof DEFAULT_LEARNING_STATE;
+      nextLearningState.overall = clampScore(learningBase.overall + Math.max(1, Math.round(gain * 0.8)));
+
+      if (todayRecord) {
+        const nextRecord = {
+          ...todayRecord,
+          capturedAt: now.toISOString(),
+          learningState: nextLearningState,
+        };
+        await AsyncStorage.setItem(todayRecordKey, JSON.stringify(nextRecord));
+      }
+
+      const snapshot = {
+        date: dateKey,
+        capturedAt: now.toISOString(),
+        overallScore: clampScore(latest?.overallScore ?? 68),
+        learningOverallScore: clampScore(nextLearningState.overall),
+        bodyHealthScore: clampScore(latest?.bodyHealthScore ?? 68),
+        stressScore: clampScore(latest?.stressScore ?? 45),
+        fatigueScore: clampScore((latest?.fatigueScore ?? 40) + (focusMinutes >= 45 ? 3 : 1)),
+        energyScore: clampScore((latest?.energyScore ?? 62) - (focusMinutes >= 45 ? 4 : 2)),
+        analysis: `专注 ${focusMinutes} 分钟后自动更新：学习进度上升，疲劳略增、能量略降。`,
+      };
+
+      const prevLearning = clampScore(latest?.learningOverallScore ?? learningBase.overall ?? 0);
+      const prevEnergy = clampScore(latest?.energyScore ?? 62);
+      const prevFatigue = clampScore(latest?.fatigueScore ?? 40);
+      const learningDelta = snapshot.learningOverallScore - prevLearning;
+      const energyDelta = snapshot.energyScore - prevEnergy;
+      const fatigueDelta = snapshot.fatigueScore - prevFatigue;
+
+      setFocusFeedback({
+        visible: true,
+        title: `🎉 完成 ${focusMinutes} 分钟专注`,
+        summary: currentTask ? `任务「${currentTask.title}」已写入成长记录` : '本次专注已写入成长记录',
+        learningDelta,
+        energyDelta,
+        fatigueDelta,
+      });
+
+      const merged = [snapshot, ...history]
+        .filter((item, idx, arr) => idx === arr.findIndex((x) => x.capturedAt === item.capturedAt))
+        .sort((a, b) => new Date(b.capturedAt).getTime() - new Date(a.capturedAt).getTime())
+        .slice(0, 30);
+
+      await AsyncStorage.setItem(HEALTH_STATUS_HISTORY_KEY, JSON.stringify(merged));
+    } catch (error) {
+      console.warn('Failed to auto update health panel after focus:', error);
+    }
+  };
 
   // 2. 动画共享值
   const animState = useSharedValue(0);
@@ -40,6 +171,17 @@ export function useTimer() {
   const smoothProgress = useSharedValue(0);
 
   // 3. 核心逻辑
+  useEffect(() => {
+    if (!focusFeedback.visible) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      setFocusFeedback((prev) => ({ ...prev, visible: false }));
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [focusFeedback.visible]);
+
+  // 2. 动画共享值
   useEffect(() => {
     const clockTimer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(clockTimer);
@@ -154,6 +296,7 @@ export function useTimer() {
   const handleTimerComplete = async () => {
     soundManager.playSound('complete');
     await uploadStudyLog(totalDuration);
+    await syncHealthPanelAfterFocus(totalDuration);
     askTaskCompletion();
   };
 
@@ -197,7 +340,16 @@ export function useTimer() {
     if (elapsedTime < 5 * 60) {
       showAlert('提示', '专注时间不足 5 分钟，无法计入榜单。确定要放弃吗？', [
         { text: '继续专注', style: 'cancel', onPress: () => { setIsActive(true); closeAlert(); } },
-        { text: '放弃', style: 'destructive', onPress: () => { soundManager.playSound('end'); closeAlert(); afterSessionEnd(); } }
+        {
+          text: '放弃',
+          style: 'destructive',
+          onPress: async () => {
+            soundManager.playSound('end');
+            closeAlert();
+            await syncHealthPanelAfterFocus(elapsedTime);
+            afterSessionEnd();
+          }
+        }
       ]);
     } else {
       showAlert('结束专注', `已专注 ${Math.floor(elapsedTime / 60)} 分钟，确定结束并上传数据吗？`, [
@@ -208,6 +360,7 @@ export function useTimer() {
             soundManager.playSound('end');
             closeAlert();
             await uploadStudyLog(elapsedTime);
+            await syncHealthPanelAfterFocus(elapsedTime);
             afterSessionEnd();
           }
         }
@@ -218,6 +371,8 @@ export function useTimer() {
   return {
     totalDuration, timeLeft, isActive, isSessionActive, isMuted, isGuest, currentTime, alertConfig,
     currentTask, animState, waveAnim, rockAnim, bobAnim, smoothProgress,
+    focusFeedback,
+    dismissFocusFeedback: () => setFocusFeedback((prev) => ({ ...prev, visible: false })),
     toggleTimer, resetTimer, handleEndSession, handleTimeChange, toggleMute, closeAlert,
   };
 }

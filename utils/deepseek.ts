@@ -1,45 +1,131 @@
+import { getAppSecret } from './secrets';
+
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
+export class DeepSeekRequestError extends Error {
+  status?: number;
+  code?: string;
+
+  constructor(message: string, status?: number, code?: string) {
+    super(message);
+    this.name = 'DeepSeekRequestError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/chat/completions';
-const DEEPSEEK_API_KEY = process.env.EXPO_PUBLIC_DEEPSEEK_API_KEY;
+const DEEPSEEK_TIMEOUT_MS = 25000;
+const DEFAULT_MAX_RETRIES = 1;
 
-export const sendToDeepSeek = async (messages: ChatMessage[], apiKey?: string) => {
-  const keyToUse = apiKey || DEEPSEEK_API_KEY;
+export interface DeepSeekRequestOptions {
+  timeoutMs?: number;
+  maxRetries?: number;
+}
+
+const shouldRetry = (error: unknown, attempt: number, maxRetries: number) => {
+  if (attempt >= maxRetries) {
+    return false;
+  }
+
+  if (error instanceof DeepSeekRequestError) {
+    return (
+      error.code === 'timeout' ||
+      error.status === 408 ||
+      error.status === 429 ||
+      (error.status !== undefined && error.status >= 500)
+    );
+  }
+
+  return true;
+};
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export const sendToDeepSeek = async (
+  messages: ChatMessage[],
+  apiKey?: string,
+  options: DeepSeekRequestOptions = {}
+) => {
+  const keyToUse = apiKey || (await getAppSecret('DEEPSEEK_API_KEY'));
   if (!keyToUse) {
-    console.error('DeepSeek API Key is missing. process.env.EXPO_PUBLIC_DEEPSEEK_API_KEY is:', process.env.EXPO_PUBLIC_DEEPSEEK_API_KEY);
-    throw new Error('DeepSeek API Key not configured. Please set EXPO_PUBLIC_DEEPSEEK_API_KEY in .env');
+    throw new DeepSeekRequestError('DeepSeek API Key missing: 请在 Supabase app_secrets 配置 DEEPSEEK_API_KEY', 401, 'missing_api_key');
   }
 
-  try {
-    const response = await fetch(DEEPSEEK_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${keyToUse}`,
-      },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: messages,
-        temperature: 0.1, // 降低随机性
-        response_format: { type: 'json_object' }, // 强制 JSON 返回
-        stream: false,
-      }),
-    });
+  const timeoutMs = options.timeoutMs ?? DEEPSEEK_TIMEOUT_MS;
+  const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
 
-    const data = await response.json();
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    try {
+      const controller = new AbortController();
+      timer = setTimeout(() => controller.abort(), timeoutMs);
 
-    if (!response.ok) {
-      throw new Error(data.error?.message || 'DeepSeek API request failed');
+      const response = await fetch(DEEPSEEK_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${keyToUse}`,
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: messages,
+          temperature: 0.1,
+          response_format: { type: 'json_object' },
+          stream: false,
+        }),
+        signal: controller.signal,
+      });
+
+      if (timer) {
+        clearTimeout(timer);
+      }
+
+      const rawText = await response.text();
+      let data: any = null;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        data = null;
+      }
+
+      if (!response.ok) {
+        const message =
+          data?.error?.message ||
+          (response.status === 401 ? 'DeepSeek 鉴权失败，请检查 API Key。' : `DeepSeek 请求失败 (${response.status})`);
+        throw new DeepSeekRequestError(message, response.status, data?.error?.code);
+      }
+
+      const content = data?.choices?.[0]?.message?.content;
+      if (!content) {
+        throw new DeepSeekRequestError('DeepSeek 返回为空，请稍后重试。', response.status, 'empty_response');
+      }
+
+      return data.choices[0].message;
+    } catch (error: any) {
+      const normalizedError =
+        error?.name === 'AbortError'
+          ? new DeepSeekRequestError('DeepSeek 请求超时，请检查网络后重试。', 408, 'timeout')
+          : error;
+
+      if (shouldRetry(normalizedError, attempt, maxRetries)) {
+        await sleep(800);
+        continue;
+      }
+
+      console.error('DeepSeek API Error:', normalizedError);
+      throw normalizedError;
+    } finally {
+      if (timer) {
+        clearTimeout(timer);
+      }
     }
-
-    return data.choices[0].message;
-  } catch (error) {
-    console.error('DeepSeek API Error:', error);
-    throw error;
   }
+
+  throw new DeepSeekRequestError('DeepSeek 请求失败，请稍后重试。', 500, 'unknown');
 };
 
 /**

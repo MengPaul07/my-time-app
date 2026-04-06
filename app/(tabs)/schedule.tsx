@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import {
   ActivityIndicator,
   StyleSheet,
@@ -24,11 +23,12 @@ import { CourseModal } from '@/modules/schedule/components/CourseModal';
 import { WeeklyScheduleModal } from '@/modules/schedule/components/WeeklyScheduleModal';
 import { FloatingActionButton } from '@/modules/schedule/components/FloatingActionButton';
 import { ModernDatePicker, ModernTimePicker } from '@/modules/schedule/components/ModernPicker';
-import { AIAssistantModal } from '@/modules/ai/components/AIAssistantModal';
+// import { AIAssistantModal } from '@/modules/ai/components/AIAssistantModal';
 import { START_HOUR, END_HOUR, HOUR_HEIGHT } from '@/constants/config';
 
 // 导入逻辑钩子
 import { useSchedule } from '@/modules/schedule/hooks/use-schedule';
+import { useGlobalAIStore } from '@/modules/ai/store/useGlobalAIStore';
 
 import * as ImagePicker from 'expo-image-picker';
 import { parseScheduleFromImage } from '@/modules/ai/services/scheduleParser';
@@ -37,8 +37,10 @@ import { useUserStore } from '@/modules/auth/store/useUserStore';
 
 const ScheduleContent = () => {
   const theme = useColorScheme() ?? 'light';
-  const [aiModalVisible, setAiModalVisible] = React.useState(false);
+  // const [aiModalVisible, setAiModalVisible] = React.useState(false);
+  const { openAI } = useGlobalAIStore();
   const [isImporting, setIsImporting] = React.useState(false);
+  const [datePickerMode, setDatePickerMode] = React.useState<'schedule' | 'task'>('schedule');
   
 
   // 使用逻辑钩子
@@ -48,7 +50,9 @@ const ScheduleContent = () => {
     weeklyModalVisible, setWeeklyModalVisible, fabMenuVisible, setFabMenuVisible,
     toastConfig, setToastConfig, alertConfig, closeAlert,
     editingTask, title, setTitle, description, setDescription, estimatedDuration, setEstimatedDuration,
+    taskLocation, setTaskLocation,
     startTime, setStartTime, isDeadlineMode, selectedColor, setSelectedColor, showDatePicker, setShowDatePicker,
+    isRecurring, setIsRecurring, recurringDays, setRecurringDays,
     editingCourse, courseName, setCourseName, courseLocation, setCourseLocation, courseDay, setCourseDay,
     courseStartHour, setCourseStartHour, courseStartMinute, setCourseStartMinute,
     courseEndHour, setCourseEndHour, courseEndMinute, setCourseEndMinute,
@@ -132,6 +136,7 @@ const ScheduleContent = () => {
     }
   }, [viewMode, selectedDate]);
 
+
   return (
     <ThemedView style={styles.container}>
       <Toast 
@@ -143,7 +148,7 @@ const ScheduleContent = () => {
       />
       
       <View style={styles.headerContainer}>
-        <ThemedText type="subtitle" style={{ fontSize: 24, fontWeight: 'bold' }}>日程管理</ThemedText>
+        <ThemedText type="subtitle" style={styles.pageTitle}>日程管理</ThemedText>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <TouchableOpacity style={styles.iconButton} onPress={() => setViewMode(viewMode === 'list' ? 'timeline' : 'list')}>
             <Ionicons name={viewMode === 'list' ? "calendar-outline" : "list-outline"} size={24} color={Colors[theme].tint} />
@@ -157,9 +162,15 @@ const ScheduleContent = () => {
       <CalendarStrip 
         selectedDate={selectedDate} 
         setSelectedDate={setSelectedDate} 
-        setShowDatePicker={setShowDatePicker} 
+        setShowDatePicker={(show) => {
+          if (show) {
+            setDatePickerMode('schedule');
+          }
+          setShowDatePicker(show);
+        }} 
         theme={theme} 
       />
+
 
       {isLoading ? <ActivityIndicator size="large" color={Colors[theme].tint} style={{ marginTop: 40 }} /> : (
         <View style={{ flex: 1 }}>
@@ -191,49 +202,23 @@ const ScheduleContent = () => {
         onAddCourse={() => setCourseModalVisible(true)}
         onAddDeadline={() => openCreateModal(true)}
         onAddTask={() => openCreateModal(false)}
-        onAiTask={() => setAiModalVisible(true)}
+        onAiTask={() => {
+          // Open Global AI Assistant
+          openAI();
+        }}
         onImportSchedule={handleImportSchedule}
         isImporting={isImporting}
         theme={theme}
       />
 
-      <AIAssistantModal 
-        visible={aiModalVisible}
-        onClose={() => setAiModalVisible(false)}
-        onTaskConfirmed={(taskDate) => {
-           if (taskDate) {
-             const isSameDay = taskDate.getDate() === selectedDate.getDate() &&
-                               taskDate.getMonth() === selectedDate.getMonth() &&
-                               taskDate.getFullYear() === selectedDate.getFullYear();
-             
-             if (!isSameDay) {
-                // 如果任务不在当前显示的日期，跳转过去
-                setSelectedDate(taskDate);
-                // 延迟一下显示 Toast，因为页面切换可能需要时间
-                setTimeout(() => {
-                   setToastConfig({
-                     visible: true,
-                     message: `已跳转至 ${taskDate.getMonth()+1}月${taskDate.getDate()}日`,
-                     type: 'info',
-                     duration: 3000
-                   });
-                }, 300);
-             } else {
-                setToastConfig({ visible: true, message: '任务添加成功', type: 'success', duration: 3000 });
-             }
-           } else {
-             // 浮动任务
-             setToastConfig({ visible: true, message: '浮动任务已添加', type: 'success', duration: 3000 });
-           }
-        }}
-      />
-
       <TaskModal 
         visible={modalVisible} onClose={() => setModalVisible(false)} onSave={handleSaveTask}
         title={title} setTitle={setTitle} description={description} setDescription={setDescription}
+        location={taskLocation} setLocation={setTaskLocation}
         estimatedDuration={estimatedDuration} setEstimatedDuration={setEstimatedDuration}
         startTime={startTime} onOpenTimePicker={() => { setPickerMode('task'); setIsPickerVisible(true); }}
-        onOpenDatePicker={() => setShowDatePicker(true)} selectedColor={selectedColor} setSelectedColor={setSelectedColor}
+        onOpenDatePicker={() => { setDatePickerMode('task'); setShowDatePicker(true); }} selectedColor={selectedColor} setSelectedColor={setSelectedColor}
+        isRecurring={isRecurring} setIsRecurring={setIsRecurring} recurringDays={recurringDays} setRecurringDays={setRecurringDays}
         isDeadlineMode={isDeadlineMode} editingTask={editingTask} theme={theme} onDelete={() => editingTask && deleteItem(editingTask.id)}
       />
 
@@ -257,8 +242,18 @@ const ScheduleContent = () => {
         visible={showDatePicker} onClose={() => setShowDatePicker(false)} 
         onConfirm={(y, m, d) => {
           const newDate = new Date(y, m - 1, d);
-          if (startTime) { newDate.setHours(startTime.getHours()); newDate.setMinutes(startTime.getMinutes()); }
-          setStartTime(newDate); setShowDatePicker(false);
+          if (datePickerMode === 'schedule') {
+            setSelectedDate(newDate);
+            setShowDatePicker(false);
+            return;
+          }
+
+          if (startTime) {
+            newDate.setHours(startTime.getHours());
+            newDate.setMinutes(startTime.getMinutes());
+          }
+          setStartTime(newDate);
+          setShowDatePicker(false);
         }}
         tempYear={tempYear} setTempYear={setTempYear} tempMonth={tempMonth} setTempMonth={setTempMonth}
         tempDay={tempDay} setTempDay={setTempDay} theme={theme}
@@ -290,5 +285,6 @@ export default function ScheduleScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, paddingTop: 60 },
   headerContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginBottom: 15 },
+  pageTitle: { fontSize: 24, fontWeight: 'bold' },
   iconButton: { padding: 8 },
 });

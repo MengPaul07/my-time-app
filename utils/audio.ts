@@ -1,7 +1,6 @@
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 
-// 预定义的音效 URL (使用在线资源以确保开箱即用，建议替换为本地资源)
 const SOUND_URLS = {
   start: 'https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3', // 清脆的小铃铛
   complete: 'https://www.soundjay.com/misc/sounds/bell-ringing-04.mp3', // 柔和的风铃

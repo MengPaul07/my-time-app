@@ -1,50 +1,73 @@
-# Welcome to your Expo app 👋
+# My Time App (Archive)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+> 本项目已停止维护更新，现以开源归档形式发布，供学习与二次开发参考。
 
-## Get started
+## 项目简介
+My Time App 是一个基于 Expo + React Native 的个人时间管理应用，包含以下核心能力：
 
-1. Install dependencies
+- 日程管理：任务/课程管理、时间视图、列表视图
+- AI 助手：基于 DeepSeek 的排程与文本解析（通过 Supabase secrets 读取密钥）
+- 健康状态面板：作息/饮食/主观状态记录与趋势分析
+- 成长模块：算法竞赛成长面板、英语学习成长面板
 
-   ```bash
-   npm install
-   ```
+## 适合开源社区的可复用部分
 
-2. Start the app
+- 通用日程架构（任务 + 课程 + Store + 多视图）
+- Expo 端的本地数据 + 云端数据混合模式
+- 面向学习场景的成长面板实现（可改造为任意领域）
+- AI 交互提示词工程与动作执行框架（需自行审计和加固）
 
-   ```bash
-   npx expo start
-   ```
+## 技术栈
 
-In the output, you'll find options to open the app in a
+- Expo 54
+- React Native 0.81
+- TypeScript
+- Zustand
+- Supabase
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 快速开始
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+### 1) 安装依赖
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2) 配置环境变量
 
-## Learn more
+复制 `.env.example` 到 `.env` 并填写：
 
-To learn more about developing your project with Expo, look at the following resources:
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+可选（仅本地调试）:
 
-## Join the community
+- `EXPO_PUBLIC_BACKEND_URL`
+- `EXPO_PUBLIC_DEEPSEEK_API_KEY`
+- `EXPO_PUBLIC_BAIDU_API_KEY`
+- `EXPO_PUBLIC_BAIDU_SECRET_KEY`
 
-Join our community of developers creating universal apps.
+### 3) 初始化 Supabase
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+执行 `supabase_setup.sql`（已提供安全模板，不含真实密钥），并根据注释替换占位符。
+
+### 4) 运行
+
+```bash
+npm run start
+```
+
+## 安全说明
+
+- 仓库不再包含硬编码 Supabase 凭证。
+- 真实 API Key 请仅放入你自己的环境变量或 Supabase `app_secrets`。
+- 请勿提交任何 `.env` 文件。
+
+## 维护状态
+
+- 状态：Archived / 不再主动维护
+- 欢迎 Fork 自行演进
+
+## License
+
+见 `LICENSE`。

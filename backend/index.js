@@ -47,9 +47,25 @@ app.post('/api/ai', async (req, res) => {
   const minutes = String(now.getMinutes()).padStart(2, '0');
   const weekday = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][now.getDay()];
   const currentDate = `${year}-${month}-${day} ${hours}:${minutes} ${weekday}`;
+  const currentDateTime = `${year}-${month}-${day}T${hours}:${minutes}:00`;
+  const currentTime = `${hours}:${minutes}`;
+  const currentHour = String(now.getHours());
+  const timePeriod = now.getHours() < 6
+    ? '凌晨'
+    : now.getHours() < 12
+      ? '上午'
+      : now.getHours() < 14
+        ? '中午'
+        : now.getHours() < 19
+          ? '下午'
+          : '晚上';
 
   const prompt = ASSISTANT_SYSTEM_PROMPT
       .replace('{{currentDate}}', currentDate)
+      .replace('{{currentDateTime}}', currentDateTime)
+      .replace('{{currentTime}}', currentTime)
+      .replace('{{currentHour}}', currentHour)
+      .replace('{{timePeriod}}', timePeriod)
       .replace('{{tasksContext}}', tasksContext || "No tasks Loaded")
       .replace('{{coursesContext}}', coursesContext || "No courses Loaded");
 

@@ -21,6 +21,12 @@ export const ListView: React.FC<ListViewProps> = ({
   onToggleStatus,
   onStartFocus,
 }) => {
+  const formatRecurringDays = (days?: number[]) => {
+    if (!days || days.length === 0) return '';
+    const map: Record<number, string> = { 1: '一', 2: '二', 3: '三', 4: '四', 5: '五', 6: '六', 7: '日' };
+    return ` · 每周${[...days].sort((a, b) => a - b).map(d => map[d]).join('/')}`;
+  };
+
   const renderItem = ({ item }: { item: Task }) => {
     let timeDisplay = '';
     if (item.is_course && item.start_time && item.estimated_duration) {
@@ -71,8 +77,12 @@ export const ListView: React.FC<ListViewProps> = ({
             ) : (
               <ThemedText style={[styles.metaText, { color: 'rgba(255,255,255,0.9)' }]}>
                 {timeDisplay}
-                {!item.is_course && item.estimated_duration ? ` · ${Math.floor(item.estimated_duration / 60)}分钟` : ''}
-                {item.location ? ` · ${item.location}` : ''}
+                {!item.is_course
+                  ? item.location
+                    ? ` · ${item.location}${item.estimated_duration ? ` · ${Math.max(1, Math.floor(item.estimated_duration / 60))}分钟` : ''}`
+                    : (item.estimated_duration ? ` · ${Math.max(1, Math.floor(item.estimated_duration / 60))}分钟` : '')
+                  : (item.location ? ` · ${item.location}` : '')}
+                {!item.is_course ? formatRecurringDays(item.recurring_days) : ''}
               </ThemedText>
             )}
           </View>
