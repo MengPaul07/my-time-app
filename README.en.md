@@ -81,7 +81,7 @@ npm install
 
 Copy .env.example to .env and fill values as needed.
 
-Required:
+Optional cloud database:
 
 - EXPO_PUBLIC_SUPABASE_URL
 - EXPO_PUBLIC_SUPABASE_ANON_KEY
