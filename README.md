@@ -81,7 +81,7 @@ npm install
 
 复制 .env.example 为 .env，然后按需填写。
 
-必填：
+可选云端数据库：
 
 - EXPO_PUBLIC_SUPABASE_URL
 - EXPO_PUBLIC_SUPABASE_ANON_KEY
