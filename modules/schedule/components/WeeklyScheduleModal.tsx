@@ -6,6 +6,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/components/constants/theme';
 import { Course } from '@/types/app';
 import { START_HOUR, END_HOUR } from '@/constants/config';
+import { useTranslation } from 'react-i18next';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -22,7 +23,8 @@ export const WeeklyScheduleModal: React.FC<WeeklyScheduleModalProps> = ({
   courses,
   theme,
 }) => {
-  const weekDays = ['一', '二', '三', '四', '五', '六', '日'];
+  const { t } = useTranslation();
+  const weekDays = t('weekdays.shortMonFirst', { returnObjects: true }) as string[];
   const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
   const colWidth = (SCREEN_WIDTH - 40) / 7;
   const rowHeight = 50;
@@ -31,7 +33,7 @@ export const WeeklyScheduleModal: React.FC<WeeklyScheduleModalProps> = ({
     <Modal visible={visible} animationType="slide" transparent={false}>
       <ThemedView style={styles.container}>
         <View style={styles.header}>
-          <ThemedText type="subtitle">课程总览</ThemedText>
+          <ThemedText type="subtitle">{t('schedule.course.overview')}</ThemedText>
           <TouchableOpacity onPress={onClose}>
             <Ionicons name="close" size={28} color={Colors[theme].icon} />
           </TouchableOpacity>

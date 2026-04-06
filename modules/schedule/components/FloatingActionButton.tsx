@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 
@@ -27,6 +28,8 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   isImporting = false,
   theme,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <React.Fragment>
       {/* FAB Menu Overlay & Items */}
@@ -52,7 +55,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                  disabled={isImporting}
                >
                   <ThemedText style={styles.fabMenuText}>
-                    {isImporting ? 'AI 解析中...' : '导入 AI 课表'}
+                    {isImporting ? t('schedule.fab.importing') : t('schedule.fab.importAi')}
                   </ThemedText>
                   <View style={[styles.fabMenuIcon, { backgroundColor: isImporting ? '#999' : '#5856D6' }]}>
                     <Ionicons name={isImporting ? "hourglass-outline" : "scan"} size={22} color="#fff" />
@@ -65,7 +68,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                  style={styles.fabMenuItem} 
                  onPress={() => { setFabMenuVisible(false); onAiTask(); }}
                >
-                  <ThemedText style={styles.fabMenuText}>AI 智能排程</ThemedText>
+                  <ThemedText style={styles.fabMenuText}>{t('schedule.fab.aiSchedule')}</ThemedText>
                   <View style={[styles.fabMenuIcon, { backgroundColor: '#AF52DE' }]}>
                     <Ionicons name="sparkles" size={22} color="#fff" />
                   </View>
@@ -76,7 +79,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                style={styles.fabMenuItem} 
                onPress={() => { setFabMenuVisible(false); onAddCourse(); }}
              >
-                <ThemedText style={styles.fabMenuText}>添加课程</ThemedText>
+                <ThemedText style={styles.fabMenuText}>{t('schedule.fab.addCourse')}</ThemedText>
                 <View style={[styles.fabMenuIcon, { backgroundColor: '#FF9500' }]}>
                   <Ionicons name="school" size={22} color="#fff" />
                 </View>
@@ -86,7 +89,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                style={styles.fabMenuItem} 
                onPress={() => { setFabMenuVisible(false); onAddDeadline(); }}
              >
-                <ThemedText style={styles.fabMenuText}>新建 DDL</ThemedText>
+                <ThemedText style={styles.fabMenuText}>{t('schedule.fab.addDeadline')}</ThemedText>
                 <View style={[styles.fabMenuIcon, { backgroundColor: '#FF3B30' }]}>
                   <Ionicons name="skull" size={22} color="#fff" />
                 </View>
@@ -96,7 +99,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                style={styles.fabMenuItem} 
                onPress={() => { setFabMenuVisible(false); onAddTask(); }}
              >
-                <ThemedText style={styles.fabMenuText}>新建任务</ThemedText>
+                <ThemedText style={styles.fabMenuText}>{t('schedule.fab.addTask')}</ThemedText>
                 <View style={[styles.fabMenuIcon, { backgroundColor: Colors[theme].tint }]}>
                   <Ionicons name="checkbox" size={22} color="#fff" />
                 </View>

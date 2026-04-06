@@ -4,12 +4,14 @@ import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 import { CustomAlert } from '@/components/ui/custom-alert';
 import { CustomThemeProvider } from '@/contexts/ThemeContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAuthSession } from '@/modules/auth/hooks/use-auth-session';
 import { GlobalAIAssistant } from '@/modules/ai/components/GlobalAIAssistant';
+import '@/utils/i18n';
 
 // 🛠️ 开发调试开关: 设置为 true 可跳过登录检查直接进入 App
 const DEV_BYPASS_AUTH = false; 
@@ -20,6 +22,7 @@ export const unstable_settings = {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const { t } = useTranslation();
   
   // 使用逻辑钩子处理 Auth、Session、热更新和版本检查
   const {
@@ -41,7 +44,7 @@ function RootLayoutNav() {
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        <Stack.Screen name="modal" options={{ presentation: 'modal', title: t('common.modal') }} />
       </Stack>
       
       {/* 全局 AI 悬浮球 */}

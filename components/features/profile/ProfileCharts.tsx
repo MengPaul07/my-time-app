@@ -1,5 +1,6 @@
 import React from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { BarChart } from 'react-native-gifted-charts';
 import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
@@ -15,12 +16,13 @@ export const ProfileCharts: React.FC<ProfileChartsProps> = ({
   weeklyStats,
   theme,
 }) => {
+  const { t } = useTranslation();
   const windowWidth = Dimensions.get('window').width;
 
   return (
     <>
       <View style={[styles.chartCard, { backgroundColor: Colors[theme].background, borderColor: Colors[theme].icon }]}>
-        <ThemedText type="subtitle" style={styles.chartTitle}>今日学习时段 (分钟)</ThemedText>
+        <ThemedText type="subtitle" style={styles.chartTitle}>{t('profile.charts.todayTitle')}</ThemedText>
         {todayHourlyStats.length > 0 && todayHourlyStats.some(i => i.value > 0) ? (
           <BarChart
             data={todayHourlyStats}
@@ -39,12 +41,12 @@ export const ProfileCharts: React.FC<ProfileChartsProps> = ({
             width={windowWidth - 80}
           />
         ) : (
-          <ThemedText style={{ opacity: 0.5, textAlign: 'center', marginVertical: 20 }}>今日暂无数据</ThemedText>
+          <ThemedText style={{ opacity: 0.5, textAlign: 'center', marginVertical: 20 }}>{t('profile.charts.todayEmpty')}</ThemedText>
         )}
       </View>
 
       <View style={[styles.chartCard, { backgroundColor: Colors[theme].background, borderColor: Colors[theme].icon }]}>
-        <ThemedText type="subtitle" style={styles.chartTitle}>近七日学习时长 (分钟)</ThemedText>
+        <ThemedText type="subtitle" style={styles.chartTitle}>{t('profile.charts.weekTitle')}</ThemedText>
         {weeklyStats.length > 0 && weeklyStats.some(i => i.value > 0) ? (
           <BarChart
             data={weeklyStats}
@@ -63,7 +65,7 @@ export const ProfileCharts: React.FC<ProfileChartsProps> = ({
             width={windowWidth - 100}
           />
         ) : (
-          <ThemedText style={{ opacity: 0.5, textAlign: 'center', marginVertical: 20 }}>暂无数据</ThemedText>
+          <ThemedText style={{ opacity: 0.5, textAlign: 'center', marginVertical: 20 }}>{t('profile.charts.weekEmpty')}</ThemedText>
         )}
       </View>
     </>

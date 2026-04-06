@@ -10,6 +10,7 @@ import {
   Platform 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/components/constants/theme';
@@ -56,39 +57,41 @@ export const CourseModal: React.FC<CourseModalProps> = ({
   editingCourse,
   theme,
 }) => {
+  const { t } = useTranslation();
   const placeholderColor = Colors[theme].text + '99';
+  const weekdayLabels = t('weekdays.shortMonFirst', { returnObjects: true }) as string[];
 
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalOverlay}>
         <ThemedView style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <ThemedText type="subtitle">{editingCourse ? '编辑课程' : '添加课程'}</ThemedText>
+            <ThemedText type="subtitle">{editingCourse ? t('schedule.course.edit') : t('schedule.course.add')}</ThemedText>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={Colors[theme].icon} />
             </TouchableOpacity>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false}>
-            <ThemedText style={styles.label}>课程名称</ThemedText>
+            <ThemedText style={styles.label}>{t('schedule.course.title')}</ThemedText>
             <TextInput 
               style={[styles.input, { color: Colors[theme].text, borderColor: Colors[theme].icon + '40' }]} 
               value={courseName} 
               onChangeText={setCourseName}
-              placeholder="例如：线性代数"
+              placeholder={t('schedule.course.placeholderName')}
               placeholderTextColor={placeholderColor}
             />
             
-            <ThemedText style={styles.label}>上课地点</ThemedText>
+            <ThemedText style={styles.label}>{t('schedule.course.location')}</ThemedText>
             <TextInput 
               style={[styles.input, { color: Colors[theme].text, borderColor: Colors[theme].icon + '40' }]} 
               value={courseLocation} 
               onChangeText={setCourseLocation}
-              placeholder="例如：东区一教 504"
+              placeholder={t('schedule.course.placeholderLocation')}
               placeholderTextColor={placeholderColor}
             />
 
-            <ThemedText style={styles.label}>星期几 (1-7)</ThemedText>
+            <ThemedText style={styles.label}>{t('schedule.course.weekday')}</ThemedText>
             <View style={styles.weekSelectContainer}>
               {[1, 2, 3, 4, 5, 6, 7].map(d => (
                 <TouchableOpacity 
@@ -97,7 +100,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
                   onPress={() => setCourseDay(d)}
                 >
                   <ThemedText style={[styles.weekOptionText, courseDay === d && { color: '#fff' }]}>
-                    {['一', '二', '三', '四', '五', '六', '日'][d-1]}
+                    {weekdayLabels[d - 1]}
                   </ThemedText>
                 </TouchableOpacity>
               ))}
@@ -105,7 +108,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
 
             <View style={styles.rowInputs}>
               <View style={{ flex: 1 }}>
-                <ThemedText style={styles.label}>开始时间</ThemedText>
+                <ThemedText style={styles.label}>{t('common.start')}</ThemedText>
                 <TouchableOpacity 
                   style={[styles.dateButton, { borderColor: Colors[theme].icon + '40' }]}
                   onPress={onOpenStartTimePicker}
@@ -117,7 +120,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
               </View>
               <View style={{ width: 20 }} />
               <View style={{ flex: 1 }}>
-                <ThemedText style={styles.label}>结束时间</ThemedText>
+                <ThemedText style={styles.label}>{t('common.end')}</ThemedText>
                 <TouchableOpacity 
                   style={[styles.dateButton, { borderColor: Colors[theme].icon + '40' }]}
                   onPress={onOpenEndTimePicker}
@@ -134,7 +137,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
             style={[styles.saveButton, { backgroundColor: Colors[theme].tint }]} 
             onPress={onSave}
           >
-            <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>保存课程</ThemedText>
+            <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>{t('schedule.course.save')}</ThemedText>
           </TouchableOpacity>
 
           {editingCourse && (
@@ -142,7 +145,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
               style={[styles.deleteButton]} 
               onPress={onDelete}
             >
-              <ThemedText style={{ color: '#ff4444', fontWeight: 'bold' }}>删除课程</ThemedText>
+              <ThemedText style={{ color: '#ff4444', fontWeight: 'bold' }}>{t('schedule.course.delete')}</ThemedText>
             </TouchableOpacity>
           )}
         </ThemedView>

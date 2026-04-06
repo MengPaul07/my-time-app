@@ -1,5 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
@@ -10,6 +11,7 @@ import { useAuth } from '@/hooks/use-auth';
 export default function AuthScreen() {
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
+  const { t } = useTranslation();
 
   // 使用逻辑钩子处理 Auth 逻辑
   const {
@@ -19,15 +21,15 @@ export default function AuthScreen() {
 
   return (
     <ThemedView style={styles.container}>
-      <ThemedText type="title" style={styles.title}>欢迎回来</ThemedText>
-      <ThemedText style={styles.subtitle}>请登录或注册以同步你的专注数据</ThemedText>
+      <ThemedText type="title" style={styles.title}>{t('auth.welcome')}</ThemedText>
+      <ThemedText style={styles.subtitle}>{t('auth.subtitle')}</ThemedText>
 
       <View style={styles.inputContainer}>
         <TextInput
           style={[styles.input, { color: Colors[theme].text, borderColor: Colors[theme].icon }]}
           onChangeText={(text) => setEmail(text)}
           value={email}
-          placeholder="邮箱 (email@address.com)"
+          placeholder={t('auth.emailPlaceholder')}
           placeholderTextColor="#888"
           autoCapitalize="none"
         />
@@ -36,7 +38,7 @@ export default function AuthScreen() {
           onChangeText={(text) => setPassword(text)}
           value={password}
           secureTextEntry={true}
-          placeholder="密码"
+          placeholder={t('auth.passwordPlaceholder')}
           placeholderTextColor="#888"
           autoCapitalize="none"
         />
@@ -51,7 +53,7 @@ export default function AuthScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <ThemedText style={styles.buttonText}>登录</ThemedText>
+            <ThemedText style={styles.buttonText}>{t('auth.signIn')}</ThemedText>
           )}
         </TouchableOpacity>
 
@@ -60,7 +62,7 @@ export default function AuthScreen() {
           disabled={loading}
           onPress={signUpWithEmail}
         >
-          <ThemedText style={[styles.buttonText, { color: Colors[theme].tint }]}>注册</ThemedText>
+          <ThemedText style={[styles.buttonText, { color: Colors[theme].tint }]}>{t('auth.signUp')}</ThemedText>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -68,7 +70,7 @@ export default function AuthScreen() {
           disabled={loading}
           onPress={handleGuestLogin}
         >
-          <ThemedText style={[styles.buttonText, { color: Colors[theme].text }]}>游客登录</ThemedText>
+          <ThemedText style={[styles.buttonText, { color: Colors[theme].text }]}>{t('auth.guest')}</ThemedText>
         </TouchableOpacity>
 
         {errorMsg ? (

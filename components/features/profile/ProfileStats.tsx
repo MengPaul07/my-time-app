@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 
@@ -14,13 +15,15 @@ export const ProfileStats: React.FC<ProfileStatsProps> = ({
   theme,
   formatDuration,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <View style={[styles.statsContainer, { backgroundColor: Colors[theme].background, borderColor: Colors[theme].icon }]}>
       <View style={styles.statItem}>
         <ThemedText style={[styles.statValue, { color: Colors[theme].tint }]}>
           {formatDuration(stats.today)}
         </ThemedText>
-        <ThemedText style={styles.statLabel}>今日专注</ThemedText>
+        <ThemedText style={styles.statLabel}>{t('profile.stats.today')}</ThemedText>
       </View>
       
       <View style={[styles.statDivider, { backgroundColor: Colors[theme].icon }]} />
@@ -29,7 +32,7 @@ export const ProfileStats: React.FC<ProfileStatsProps> = ({
         <ThemedText style={[styles.statValue, { color: Colors[theme].tint }]}>
           {formatDuration(stats.total)}
         </ThemedText>
-        <ThemedText style={styles.statLabel}>累计专注</ThemedText>
+        <ThemedText style={styles.statLabel}>{t('profile.stats.total')}</ThemedText>
       </View>
       
       <View style={[styles.statDivider, { backgroundColor: Colors[theme].icon }]} />
@@ -38,7 +41,7 @@ export const ProfileStats: React.FC<ProfileStatsProps> = ({
         <ThemedText style={[styles.statValue, { color: Colors[theme].tint }]}>
           {stats.completed}
         </ThemedText>
-        <ThemedText style={styles.statLabel}>完成任务</ThemedText>
+        <ThemedText style={styles.statLabel}>{t('profile.stats.completed')}</ThemedText>
       </View>
     </View>
   );

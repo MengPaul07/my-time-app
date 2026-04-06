@@ -4,6 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/components/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 interface CalendarStripProps {
   selectedDate: Date;
@@ -18,6 +19,7 @@ export const CalendarStrip: React.FC<CalendarStripProps> = ({
   setShowDatePicker,
   theme,
 }) => {
+  const { t } = useTranslation();
   const [dayAnchor, setDayAnchor] = useState(() => new Date());
 
   useEffect(() => {
@@ -46,14 +48,14 @@ export const CalendarStrip: React.FC<CalendarStripProps> = ({
     return arr;
   }, [dayAnchor]);
 
-  const weekDays = ['日', '一', '二', '三', '四', '五', '六'];
+  const weekDays = t('weekdays.short', { returnObjects: true }) as string[];
 
   return (
     <ThemedView style={[styles.container, { borderBottomColor: Colors[theme].icon + '20' }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.dateSelector} onPress={() => setShowDatePicker(true)}>
           <ThemedText type="subtitle" style={{ fontSize: 18 }}>
-            {selectedDate.getFullYear()}年{selectedDate.getMonth() + 1}月
+            {t('calendar.monthYear', { year: selectedDate.getFullYear(), month: selectedDate.getMonth() + 1 })}
           </ThemedText>
           <Ionicons name="chevron-down" size={16} color={Colors[theme].text} style={{ marginLeft: 4 }} />
         </TouchableOpacity>
@@ -62,7 +64,7 @@ export const CalendarStrip: React.FC<CalendarStripProps> = ({
           onPress={() => setSelectedDate(new Date())}
           style={[styles.todayButton, { backgroundColor: Colors[theme].tint + '15' }]}
         >
-          <ThemedText style={{ color: Colors[theme].tint, fontWeight: 'bold', fontSize: 12 }}>今天</ThemedText>
+          <ThemedText style={{ color: Colors[theme].tint, fontWeight: 'bold', fontSize: 12 }}>{t('common.today')}</ThemedText>
         </TouchableOpacity>
       </View>
 

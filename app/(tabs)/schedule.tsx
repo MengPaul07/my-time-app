@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
@@ -37,6 +38,7 @@ import { useUserStore } from '@/modules/auth/store/useUserStore';
 
 const ScheduleContent = () => {
   const theme = useColorScheme() ?? 'light';
+  const { t } = useTranslation();
   // const [aiModalVisible, setAiModalVisible] = React.useState(false);
   const { openAI } = useGlobalAIStore();
   const [isImporting, setIsImporting] = React.useState(false);
@@ -72,7 +74,7 @@ const ScheduleContent = () => {
 
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-          setToastConfig({ visible: true, message: '需要相册权限', type: 'error' ,duration:50000});
+          setToastConfig({ visible: true, message: t('schedule.permissionAlbum'), type: 'error' ,duration:50000});
           return; 
       }
       
@@ -87,13 +89,13 @@ const ScheduleContent = () => {
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const uri = result.assets[0].uri;
             setIsImporting(true);
-            setToastConfig({ visible: true, message: 'AI 正在解析课表(耗时较长请耐心等待)...', type: 'info', duration: 60000 }); // 增加停留时间
+            setToastConfig({ visible: true, message: t('schedule.importParsing'), type: 'info', duration: 60000 }); // 增加停留时间
 
             // 调用服务
             const parsedCourses = await parseScheduleFromImage(uri);
             
             if (!parsedCourses || parsedCourses.length === 0) {
-                setToastConfig({ visible: true, message: '未能识别出有效课程', type: 'error', duration: 3000 });
+                setToastConfig({ visible: true, message: t('schedule.importNone'), type: 'error', duration: 3000 });
                 return;
             }
 
@@ -104,11 +106,11 @@ const ScheduleContent = () => {
                     count++;
                 }
             }
-            setToastConfig({ visible: true, message: `成功导入 ${count} 门课程`, type: 'success', duration: 3000 });
+            setToastConfig({ visible: true, message: t('schedule.importSuccess', { count }), type: 'success', duration: 3000 });
         }
       } catch (e: any) {
           console.error(e);
-          setToastConfig({ visible: true, message: `解析失败: ${e.message}`, type: 'error', duration: 3000 });
+          setToastConfig({ visible: true, message: t('schedule.importFail', { message: e.message }), type: 'error', duration: 3000 });
       } finally {
          setIsImporting(false);
       }
@@ -148,7 +150,7 @@ const ScheduleContent = () => {
       />
       
       <View style={styles.headerContainer}>
-        <ThemedText type="subtitle" style={styles.pageTitle}>日程管理</ThemedText>
+        <ThemedText type="subtitle" style={styles.pageTitle}>{t('schedule.title')}</ThemedText>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <TouchableOpacity style={styles.iconButton} onPress={() => setViewMode(viewMode === 'list' ? 'timeline' : 'list')}>
             <Ionicons name={viewMode === 'list' ? "calendar-outline" : "list-outline"} size={24} color={Colors[theme].tint} />

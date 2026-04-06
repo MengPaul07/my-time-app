@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ScrollView, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { ThemedText } from '@/components/themed-text';
 import { Colors } from '@/components/constants/theme';
 import { Task } from '@/types/app';
@@ -56,16 +57,17 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
   timelineRef,
   theme,
 }) => {
+  const { t } = useTranslation();
   const hours = Array.from({ length: END_HOUR - START_HOUR + 2 }, (_, i) => START_HOUR + i);
 
   return (
     <View style={{ flex: 1 }}>
       <View style={[styles.columnHeader, { borderBottomColor: Colors[theme].icon + '10', backgroundColor: Colors[theme].background }]}>
         <View style={[styles.columnLabel, { borderRightColor: Colors[theme].icon + '10', backgroundColor: Colors[theme].tint + '05' }]}>
-          <ThemedText style={styles.labelText}>课程</ThemedText>
+          <ThemedText style={styles.labelText}>{t('schedule.timeline.columnCourse')}</ThemedText>
         </View>
         <View style={styles.columnLabel}>
-          <ThemedText style={styles.labelText}>任务</ThemedText>
+          <ThemedText style={styles.labelText}>{t('schedule.timeline.columnTask')}</ThemedText>
         </View>
       </View>
 
@@ -138,7 +140,7 @@ export const TimelineView: React.FC<TimelineViewProps> = ({
               {task.layout.height > 40 && (
                 <ThemedText style={styles.taskSubLabel} numberOfLines={1}>
                   {task.is_course
-                    ? (task.location || '课程')
+                    ? (task.location || t('schedule.timeline.courseLabel'))
                     : task.location
                       ? `${task.location} · ${Math.max(1, Math.floor(task.estimated_duration / 60))}min`
                       : `${Math.max(1, Math.floor(task.estimated_duration / 60))}min`}

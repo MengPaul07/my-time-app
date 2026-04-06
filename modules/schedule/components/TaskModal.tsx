@@ -10,6 +10,7 @@ import {
   Platform 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/components/constants/theme';
@@ -69,16 +70,10 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   theme,
   onDelete,
 }) => {
+  const { t } = useTranslation();
   const placeholderColor = Colors[theme].text + '99';
-  const weekDays = [
-    { label: '一', value: 1 },
-    { label: '二', value: 2 },
-    { label: '三', value: 3 },
-    { label: '四', value: 4 },
-    { label: '五', value: 5 },
-    { label: '六', value: 6 },
-    { label: '日', value: 7 },
-  ];
+  const weekdayLabels = t('weekdays.shortMonFirst', { returnObjects: true }) as string[];
+  const weekDays = [1, 2, 3, 4, 5, 6, 7].map((value, index) => ({ label: weekdayLabels[index], value }));
 
   const toggleRecurringDay = (day: number) => {
     if (recurringDays.includes(day)) {
@@ -94,7 +89,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
         <ThemedView style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <ThemedText type="subtitle">
-              {editingTask ? '编辑' : '新建'}{isDeadlineMode ? '截止项' : '完成任务'}
+              {editingTask ? t('schedule.task.editTitle') : t('schedule.task.createTitle')}
+              {isDeadlineMode ? t('schedule.task.deadline') : t('schedule.task.complete')}
             </ThemedText>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color={Colors[theme].icon} />
@@ -102,43 +98,43 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false}>
-            <ThemedText style={styles.label}>任务名称</ThemedText>
+            <ThemedText style={styles.label}>{t('schedule.task.name')}</ThemedText>
             <TextInput 
               style={[styles.input, { color: Colors[theme].text, borderColor: Colors[theme].icon + '40' }]} 
               value={title} 
               onChangeText={setTitle}
-              placeholder="想完成什么？"
+              placeholder={t('schedule.task.placeholderName')}
               placeholderTextColor={placeholderColor}
             />
 
-            <ThemedText style={styles.label}>补充说明</ThemedText>
+            <ThemedText style={styles.label}>{t('schedule.task.desc')}</ThemedText>
             <TextInput 
               style={[styles.input, { height: 80, color: Colors[theme].text, borderColor: Colors[theme].icon + '40' }]} 
               value={description} 
               onChangeText={setDescription}
               multiline
-              placeholder="可选..."
+              placeholder={t('schedule.task.placeholderDesc')}
               placeholderTextColor={placeholderColor}
             />
 
-            <ThemedText style={styles.label}>地点（可选）</ThemedText>
+            <ThemedText style={styles.label}>{t('schedule.task.location')}</ThemedText>
             <TextInput
               style={[styles.input, { color: Colors[theme].text, borderColor: Colors[theme].icon + '40' }]}
               value={location}
               onChangeText={setLocation}
-              placeholder="例如：图书馆三楼 / 教学楼 A403"
+              placeholder={t('schedule.task.placeholderLocation')}
               placeholderTextColor={placeholderColor}
             />
 
             {!isDeadlineMode && (
               <>
-                <ThemedText style={styles.label}>预计时长 (分钟)</ThemedText>
+                <ThemedText style={styles.label}>{t('schedule.task.duration')}</ThemedText>
                 <TextInput 
                   style={[styles.input, { color: Colors[theme].text, borderColor: Colors[theme].icon + '40' }]} 
                   value={estimatedDuration} 
                   onChangeText={setEstimatedDuration}
                   keyboardType="numeric"
-                  placeholder="5 - 300"
+                  placeholder={t('schedule.task.placeholderDuration')}
                   placeholderTextColor={placeholderColor}
                 />
               </>
@@ -146,7 +142,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
             {!isDeadlineMode && (
               <>
-                <ThemedText style={styles.label}>周期任务</ThemedText>
+                <ThemedText style={styles.label}>{t('schedule.task.recurring')}</ThemedText>
                 <TouchableOpacity
                   style={[
                     styles.recurringToggle,
@@ -159,7 +155,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                     size={20}
                     color={isRecurring ? Colors[theme].tint : Colors[theme].icon}
                   />
-                  <ThemedText style={styles.recurringText}>设为周期性任务</ThemedText>
+                  <ThemedText style={styles.recurringText}>{t('schedule.task.recurringSet')}</ThemedText>
                 </TouchableOpacity>
 
                 {isRecurring && (
@@ -179,7 +175,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
                           onPress={() => toggleRecurringDay(day.value)}
                         >
                           <ThemedText style={{ color: selected ? '#fff' : Colors[theme].text, fontWeight: '600' }}>
-                            周{day.label}
+                            {day.label}
                           </ThemedText>
                         </TouchableOpacity>
                       );
@@ -191,29 +187,29 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
             <View style={styles.rowInputs}>
               <View style={{ flex: 1 }}>
-                <ThemedText style={styles.label}>开始日期</ThemedText>
+                <ThemedText style={styles.label}>{t('common.date')}</ThemedText>
                 <TouchableOpacity 
                    style={[styles.dateButton, { borderColor: Colors[theme].icon + '40' }]}
                    onPress={onOpenDatePicker}
                 >
-                  <ThemedText>{startTime ? startTime.toLocaleDateString() : '选择日期'}</ThemedText>
+                  <ThemedText>{startTime ? startTime.toLocaleDateString() : t('schedule.selectDate')}</ThemedText>
                 </TouchableOpacity>
               </View>
               <View style={{ width: 20 }} />
               <View style={{ flex: 1 }}>
-                <ThemedText style={styles.label}>{isDeadlineMode ? '截止时间' : '开始时间'}</ThemedText>
+                <ThemedText style={styles.label}>{isDeadlineMode ? t('schedule.deadline') : t('common.start')}</ThemedText>
                 <TouchableOpacity 
                   style={[styles.dateButton, { borderColor: Colors[theme].icon + '40' }]}
                   onPress={onOpenTimePicker}
                 >
-                  <ThemedText>{startTime ? startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '点此修改'}</ThemedText>
+                  <ThemedText>{startTime ? startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : t('schedule.changeTime')}</ThemedText>
                 </TouchableOpacity>
               </View>
             </View>
 
             {!isDeadlineMode && (
               <>
-                <ThemedText style={styles.label}>标记颜色</ThemedText>
+                <ThemedText style={styles.label}>{t('schedule.task.color')}</ThemedText>
                 <View style={styles.colorPalette}>
                   {PALETTE.map(c => (
                     <TouchableOpacity 
@@ -231,7 +227,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
             style={[styles.saveButton, { backgroundColor: Colors[theme].tint }]} 
             onPress={onSave}
           >
-            <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>保存</ThemedText>
+            <ThemedText style={{ color: '#fff', fontWeight: 'bold' }}>{t('common.save')}</ThemedText>
           </TouchableOpacity>
 
           {editingTask && onDelete && (
@@ -239,7 +235,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
               style={[styles.saveButton, { backgroundColor: '#ff444415', marginTop: 10, borderWidth: 1, borderColor: '#ff4444' }]} 
               onPress={onDelete}
             >
-              <ThemedText style={{ color: '#ff4444', fontWeight: 'bold' }}>删除</ThemedText>
+              <ThemedText style={{ color: '#ff4444', fontWeight: 'bold' }}>{t('common.delete')}</ThemedText>
             </TouchableOpacity>
           )}
         </ThemedView>

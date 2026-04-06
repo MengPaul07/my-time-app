@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Colors } from '@/components/constants/theme';
 import { HapticTab } from '@/components/haptic-tab';
@@ -10,6 +11,7 @@ const SHOW_STANDING_TAB = false;
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { t } = useTranslation();
 
   return (
     <Tabs
@@ -27,21 +29,21 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: '专注',
+          title: t('tabs.focus'),
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="schedule"
         options={{
-          title: '日程',
+          title: t('tabs.schedule'),
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="calendar" color={color} />,
         }}
       />
       <Tabs.Screen
         name="standing"
         options={{
-          title: '榜单',
+          title: t('tabs.leaderboard'),
           href: SHOW_STANDING_TAB ? '/standing' : null,
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
@@ -49,28 +51,28 @@ export default function TabLayout() {
       <Tabs.Screen
         name="health"
         options={{
-          title: '状态',
+          title: t('tabs.health'),
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="heart.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="cp"
         options={{
-          title: '算竞',
+          title: t('tabs.cp'),
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="chevron.left.forwardslash.chevron.right" color={color} />,
         }}
       />
       <Tabs.Screen
         name="english"
         options={{
-          title: '英语',
+          title: t('tabs.english'),
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="book.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: '我的',
+          title: t('tabs.profile'),
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
         }}
       />

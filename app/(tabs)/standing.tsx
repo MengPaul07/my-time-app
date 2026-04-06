@@ -1,5 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 
 import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
@@ -15,6 +16,7 @@ import { useLeaderboard } from '@/hooks/use-leaderboard';
 export default function StandingScreen() {
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
+  const { t } = useTranslation();
 
   // 使用逻辑钩子
   const {
@@ -30,7 +32,7 @@ export default function StandingScreen() {
   return (
     <ThemedView style={styles.container}>
       <ThemedView style={styles.header}>
-        <ThemedText type="subtitle" style={styles.pageTitle}>专注榜</ThemedText>
+        <ThemedText type="subtitle" style={styles.pageTitle}>{t('standing.title')}</ThemedText>
         <TouchableOpacity onPress={refresh} style={{ padding: 8 }}>
           <IconSymbol name="arrow.clockwise" size={20} color={Colors[theme].text} />
         </TouchableOpacity>
@@ -50,7 +52,7 @@ export default function StandingScreen() {
         <View style={styles.center}>
           <ThemedText style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>{errorMsg}</ThemedText>
           <TouchableOpacity onPress={refresh} style={[styles.refreshButton, { backgroundColor: Colors[theme].tint }]}>
-            <ThemedText style={styles.refreshText}>重试</ThemedText>
+            <ThemedText style={styles.refreshText}>{t('standing.retry')}</ThemedText>
           </TouchableOpacity>
         </View>
       ) : (
@@ -59,7 +61,7 @@ export default function StandingScreen() {
           keyExtractor={(item) => item.user_id}
           ListEmptyComponent={
             <ThemedText style={{ textAlign: 'center', marginTop: 50, opacity: 0.5 }}>
-              {activeTab === 'today' ? '今天还没有人开始专注哦，快去抢占第一名！' : '还没有专注记录，快去开始专注吧！'}
+              {activeTab === 'today' ? t('standing.emptyToday') : t('standing.emptyTotal')}
             </ThemedText>
           }
           renderItem={({ item, index }) => (

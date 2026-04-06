@@ -1,6 +1,7 @@
 import React from 'react';
 import { FlatList, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { Colors } from '@/components/constants/theme';
@@ -21,10 +22,12 @@ export const ListView: React.FC<ListViewProps> = ({
   onToggleStatus,
   onStartFocus,
 }) => {
+  const { t } = useTranslation();
+
   const formatRecurringDays = (days?: number[]) => {
     if (!days || days.length === 0) return '';
-    const map: Record<number, string> = { 1: '一', 2: '二', 3: '三', 4: '四', 5: '五', 6: '六', 7: '日' };
-    return ` · 每周${[...days].sort((a, b) => a - b).map(d => map[d]).join('/')}`;
+    const labels = t('weekdays.shortMonFirst', { returnObjects: true }) as string[];
+    return ` · ${[...days].sort((a, b) => a - b).map(d => labels[d - 1]).join('/')}`;
   };
 
   const renderItem = ({ item }: { item: Task }) => {
@@ -36,7 +39,7 @@ export const ListView: React.FC<ListViewProps> = ({
     } else if (item.start_time) {
       timeDisplay = new Date(item.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } else {
-      timeDisplay = '长期';
+      timeDisplay = t('schedule.longTerm');
     }
 
     return (
@@ -71,7 +74,7 @@ export const ListView: React.FC<ListViewProps> = ({
             {item.is_deadline ? (
               <View style={styles.deadlineTag}>
                 <ThemedText style={styles.deadlineText}>
-                  截止: {item.start_time ? new Date(item.start_time).toLocaleDateString() + ' ' + new Date(item.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                  {t('schedule.deadline')}: {item.start_time ? new Date(item.start_time).toLocaleDateString() + ' ' + new Date(item.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                 </ThemedText>
               </View>
             ) : (
@@ -79,8 +82,8 @@ export const ListView: React.FC<ListViewProps> = ({
                 {timeDisplay}
                 {!item.is_course
                   ? item.location
-                    ? ` · ${item.location}${item.estimated_duration ? ` · ${Math.max(1, Math.floor(item.estimated_duration / 60))}分钟` : ''}`
-                    : (item.estimated_duration ? ` · ${Math.max(1, Math.floor(item.estimated_duration / 60))}分钟` : '')
+                    ? ` · ${item.location}${item.estimated_duration ? ` · ${t('schedule.durationMinutes', { minutes: Math.max(1, Math.floor(item.estimated_duration / 60)) })}` : ''}`
+                    : (item.estimated_duration ? ` · ${t('schedule.durationMinutes', { minutes: Math.max(1, Math.floor(item.estimated_duration / 60)) })}` : '')
                   : (item.location ? ` · ${item.location}` : '')}
                 {!item.is_course ? formatRecurringDays(item.recurring_days) : ''}
               </ThemedText>
@@ -115,7 +118,7 @@ export const ListView: React.FC<ListViewProps> = ({
       contentContainerStyle={styles.listContent}
       ListFooterComponent={tasks.length > 0 ? (
         <ThemedText style={styles.footerText}>
-          点击任务名称可编辑 · 点击左侧方框标记完成
+          {t('schedule.listFooter')}
         </ThemedText>
       ) : null}
     />

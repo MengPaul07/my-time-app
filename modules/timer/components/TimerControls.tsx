@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -24,6 +25,8 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
   handleEndSession,
   resetTimer,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <ThemedView style={styles.controlsContainer}>
       <TouchableOpacity
@@ -36,7 +39,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
           color="#FFFFFF"
         />
         <ThemedText style={styles.buttonText}>
-          {isActive ? '暂停' : (timeLeft < totalDuration ? '继续' : '开始专注')}
+          {isActive ? t('timer.pause') : (timeLeft < totalDuration ? t('timer.resume') : t('timer.startFocus'))}
         </ThemedText>
       </TouchableOpacity>
 
@@ -46,7 +49,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({
       >
         <IconSymbol name={timeLeft < totalDuration ? "stop.fill" : "arrow.counterclockwise"} size={24} color={Colors[theme].text} />
         <ThemedText style={[styles.secondaryButtonText, { color: Colors[theme].text }]}>
-          {timeLeft < totalDuration ? '结束' : '重置'}
+          {timeLeft < totalDuration ? t('timer.end') : t('timer.reset')}
         </ThemedText>
       </TouchableOpacity>
     </ThemedView>

@@ -1,9 +1,11 @@
 import React from 'react';
 import { ActivityIndicator, Modal, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { setLanguage } from '@/utils/i18n';
 
 interface ProfileSettingsModalProps {
   visible: boolean;
@@ -22,6 +24,9 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
   theme,
   isCheckingUpdate,
 }) => {
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language.startsWith('en') ? 'en' : 'zh';
+
   return (
     <Modal
       visible={visible}
@@ -36,10 +41,43 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
       >
         <ThemedView style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <ThemedText type="subtitle">设置</ThemedText>
+            <ThemedText type="subtitle">{t('profile.settingsModal.title')}</ThemedText>
             <TouchableOpacity onPress={onHide}>
               <Ionicons name="close" size={24} color={Colors[theme].icon} />
             </TouchableOpacity>
+          </View>
+
+          <View style={[styles.settingItem, { borderBottomColor: Colors[theme].icon + '20' }]}>
+            <View style={styles.settingItemLeft}>
+              <Ionicons name="language-outline" size={22} color={Colors[theme].text} />
+              <ThemedText style={styles.settingItemText}>{t('profile.settingsModal.language')}</ThemedText>
+            </View>
+            <View style={styles.langSwitchWrap}>
+              <TouchableOpacity
+                style={[
+                  styles.langBtn,
+                  {
+                    borderColor: currentLang === 'zh' ? Colors[theme].tint : Colors[theme].icon + '35',
+                    backgroundColor: currentLang === 'zh' ? Colors[theme].tint + '1f' : 'transparent',
+                  },
+                ]}
+                onPress={() => void setLanguage('zh')}
+              >
+                <ThemedText style={[styles.langBtnText, { color: currentLang === 'zh' ? Colors[theme].tint : Colors[theme].text }]}>中文</ThemedText>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.langBtn,
+                  {
+                    borderColor: currentLang === 'en' ? Colors[theme].tint : Colors[theme].icon + '35',
+                    backgroundColor: currentLang === 'en' ? Colors[theme].tint + '1f' : 'transparent',
+                  },
+                ]}
+                onPress={() => void setLanguage('en')}
+              >
+                <ThemedText style={[styles.langBtnText, { color: currentLang === 'en' ? Colors[theme].tint : Colors[theme].text }]}>English</ThemedText>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <TouchableOpacity 
@@ -49,7 +87,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
           >
             <View style={styles.settingItemLeft}>
               <Ionicons name="cloud-download-outline" size={22} color={Colors[theme].text} />
-              <ThemedText style={styles.settingItemText}>检查更新</ThemedText>
+              <ThemedText style={styles.settingItemText}>{t('profile.settingsModal.checkUpdates')}</ThemedText>
             </View>
             {isCheckingUpdate ? (
               <ActivityIndicator size="small" color={Colors[theme].tint} />
@@ -64,7 +102,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({
           >
             <View style={styles.settingItemLeft}>
               <Ionicons name="log-out-outline" size={22} color="#ff4444" />
-              <ThemedText style={[styles.settingItemText, { color: '#ff4444' }]}>退出登录</ThemedText>
+              <ThemedText style={[styles.settingItemText, { color: '#ff4444' }]}>{t('profile.settingsModal.signOut')}</ThemedText>
             </View>
           </TouchableOpacity>
         </ThemedView>
@@ -106,5 +144,19 @@ const styles = StyleSheet.create({
   settingItemText: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  langSwitchWrap: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  langBtn: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  langBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

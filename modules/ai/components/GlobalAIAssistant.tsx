@@ -16,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '@/components/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { ThemedText } from '@/components/themed-text';
@@ -27,6 +28,7 @@ const SPRITE_SIZE = 50;
 
 export const GlobalAIAssistant = () => {
   const theme = useColorScheme() ?? 'light';
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   
   // Use global store for expanded state
@@ -153,7 +155,7 @@ export const GlobalAIAssistant = () => {
 
   const handleSaveBackground = async () => {
     const ok = await saveSchedulingBackgroundSettings();
-    setBackgroundStatusText(ok ? '已保存排程背景设置' : '保存失败，请重试');
+    setBackgroundStatusText(ok ? t('ai.saveOk') : t('ai.saveFail'));
     if (ok) {
       setTimeout(() => {
         setShowBackgroundModal(false);
@@ -171,10 +173,10 @@ export const GlobalAIAssistant = () => {
       setLocationInput('');
       setLocationTimeInput('');
       setLocationFeatureInput('');
-      setBackgroundStatusText('地点记录已加入');
+      setBackgroundStatusText(t('ai.locationAdded'));
       return;
     }
-    setBackgroundStatusText('请输入地点名称，且不要重复');
+    setBackgroundStatusText(t('ai.locationInvalid'));
   };
 
   const openGoalsModal = async () => {
@@ -195,7 +197,7 @@ export const GlobalAIAssistant = () => {
 
   const handleCreateGoal = async () => {
     const ok = await createGoal({ title: goalTitleInput, targetTime: goalTargetTime, expectation: goalExpectation });
-    setGoalStatusText(ok ? '目标已创建' : '创建失败，请重试');
+    setGoalStatusText(ok ? t('ai.goalCreated') : t('ai.goalCreateFail'));
     if (ok) {
       setGoalTitleInput('');
       await reloadGoals();
@@ -204,7 +206,7 @@ export const GlobalAIAssistant = () => {
 
   const handleDeleteGoal = async (goalId: string) => {
     const ok = await deleteGoal(goalId);
-    setGoalStatusText(ok ? '目标已删除' : '删除失败，请重试');
+    setGoalStatusText(ok ? t('ai.goalDeleted') : t('ai.goalDeleteFail'));
     if (ok) {
       await reloadGoals();
     }
@@ -264,8 +266,8 @@ export const GlobalAIAssistant = () => {
               <View style={styles.headerTitleRow}>
                  <Ionicons name="sparkles" size={20} color={Colors[theme].tint} style={{marginRight: 8}} />
                  <View>
-                   <ThemedText type="subtitle">AI 助理</ThemedText>
-                   <ThemedText style={styles.headerHint}>日程建议会逐条确认后再执行</ThemedText>
+                   <ThemedText type="subtitle">{t('ai.assistant')}</ThemedText>
+                   <ThemedText style={styles.headerHint}>{t('ai.assistantHint')}</ThemedText>
                  </View>
               </View>
               <View style={styles.headerActionRow}>
@@ -282,11 +284,11 @@ export const GlobalAIAssistant = () => {
             </View>
 
             <View style={[styles.strategyRow, { borderBottomColor: Colors[theme].icon }]}> 
-              <ThemedText style={[styles.innerHintText, { color: Colors[theme].icon }]}>数据源已固定为全量输入（状态面板 / CP成长 / 英语成长 / 目标层）。</ThemedText>
+              <ThemedText style={[styles.innerHintText, { color: Colors[theme].icon }]}>{t('ai.strategyHint')}</ThemedText>
             </View>
 
             <View style={[styles.strategyRow, { borderBottomColor: Colors[theme].icon }]}> 
-              <ThemedText style={[styles.strategyLabel, { color: Colors[theme].icon }]}>排程策略</ThemedText>
+              <ThemedText style={[styles.strategyLabel, { color: Colors[theme].icon }]}>{t('ai.strategy')}</ThemedText>
               <View style={styles.modeRow}>
                 <TouchableOpacity
                   style={[
@@ -298,7 +300,7 @@ export const GlobalAIAssistant = () => {
                   ]}
                   onPress={() => void setSchedulingMode('full_day')}
                 >
-                  <ThemedText style={styles.modeChipText}>排满全天</ThemedText>
+                  <ThemedText style={styles.modeChipText}>{t('ai.modeFullDay')}</ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
@@ -310,7 +312,7 @@ export const GlobalAIAssistant = () => {
                   ]}
                   onPress={() => void setSchedulingMode('full_week')}
                 >
-                  <ThemedText style={styles.modeChipText}>排满全周</ThemedText>
+                  <ThemedText style={styles.modeChipText}>{t('ai.modeFullWeek')}</ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
@@ -322,7 +324,7 @@ export const GlobalAIAssistant = () => {
                   ]}
                   onPress={() => void setSchedulingMode('current_decision')}
                 >
-                  <ThemedText style={styles.modeChipText}>只做当前决策</ThemedText>
+                  <ThemedText style={styles.modeChipText}>{t('ai.modeCurrent')}</ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
@@ -334,15 +336,15 @@ export const GlobalAIAssistant = () => {
                   ]}
                   onPress={() => void setSchedulingMode('custom')}
                 >
-                  <ThemedText style={styles.modeChipText}>自定义</ThemedText>
+                  <ThemedText style={styles.modeChipText}>{t('ai.modeCustom')}</ThemedText>
                 </TouchableOpacity>
               </View>
-              <ThemedText style={[styles.innerHintText, { color: Colors[theme].icon }]}>排满全天/全周时会降低对“当前状态”的侧重；只做当前决策时会提高状态侧重。</ThemedText>
+              <ThemedText style={[styles.innerHintText, { color: Colors[theme].icon }]}>{t('ai.modeHint')}</ThemedText>
               {schedulingBackgroundSettings.schedulingMode === 'custom' ? (
                 <TextInput
                   value={schedulingBackgroundSettings.customModeInstruction}
                   onChangeText={(text) => updateSchedulingBackgroundField('customModeInstruction', text)}
-                  placeholder="自定义策略说明"
+                  placeholder={t('ai.customPlaceholder')}
                   placeholderTextColor={Colors[theme].icon}
                   style={[
                     styles.customStrategyInput,
@@ -362,7 +364,7 @@ export const GlobalAIAssistant = () => {
                 {messages.length === 0 && (
                   <View style={[styles.emptyState, { backgroundColor: theme === 'dark' ? '#1F2937' : '#EEF2FF' }]}>
                          <ThemedText style={{textAlign: 'center', opacity: 0.6}}>
-                             我是你的日程助理。你可以让我帮你「添加明天的会议」、「删除刚才的任务」或「查询今天的安排」。
+                       {t('ai.intro')}
                          </ThemedText>
                     </View>
                 )}
@@ -387,14 +389,14 @@ export const GlobalAIAssistant = () => {
                        <View style={[styles.msgBubble, { alignSelf: 'flex-start', backgroundColor: theme === 'dark' ? '#2F2F32' : '#ECECF2', borderBottomLeftRadius: 6 }]}>
                         <View style={styles.thinkingRow}>
                           <ActivityIndicator size="small" color={Colors[theme].text} />
-                          <ThemedText style={styles.thinkingText}>思考中...</ThemedText>
+                          <ThemedText style={styles.thinkingText}>{t('ai.thinking')}</ThemedText>
                         </View>
                     </View>
                 )}
 
                 {pendingAction && (
                   <View style={[styles.pendingCard, { backgroundColor: theme === 'dark' ? '#2C2C2E' : '#F2F2F7', borderColor: Colors[theme].icon }]}>
-                    <ThemedText type="defaultSemiBold">待确认排程（剩余 {pendingCount} 条）</ThemedText>
+                    <ThemedText type="defaultSemiBold">{t('ai.pendingTitle', { count: pendingCount })}</ThemedText>
                     <ThemedText style={styles.pendingLabel}>{pendingActionLabel}</ThemedText>
                     <View style={styles.pendingDetailsGroup}>
                       {pendingActionDetails.map((line, idx) => (
@@ -406,13 +408,13 @@ export const GlobalAIAssistant = () => {
                         onPress={skipPendingAction}
                         style={[styles.pendingBtn, styles.skipBtn, { borderColor: Colors[theme].icon }]}
                       >
-                        <Text style={{ color: Colors[theme].text }}>跳过本条</Text>
+                        <Text style={{ color: Colors[theme].text }}>{t('ai.skip')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={confirmPendingAction}
                         style={[styles.pendingBtn, styles.confirmBtn, { backgroundColor: Colors[theme].tint }]}
                       >
-                        <Text style={{ color: '#fff', fontWeight: '600' }}>确认执行</Text>
+                        <Text style={{ color: '#fff', fontWeight: '600' }}>{t('ai.confirm')}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -426,7 +428,7 @@ export const GlobalAIAssistant = () => {
                         color: Colors[theme].text, 
                         backgroundColor: theme === 'dark' ? '#1C1C1E' : '#F2F2F7' 
                     }]}
-                    placeholder="输入指令..."
+                    placeholder={t('ai.inputPlaceholder')}
                     placeholderTextColor={Colors[theme].icon}
                     value={inputText}
                     onChangeText={setInputText}
@@ -455,18 +457,18 @@ export const GlobalAIAssistant = () => {
           <View style={styles.innerModalOverlay}>
             <View style={[styles.innerModalCard, { backgroundColor: Colors[theme].background, borderColor: Colors[theme].border }]}> 
               <View style={styles.innerModalHeader}>
-                <ThemedText type="defaultSemiBold">排程层：AI 背景设置</ThemedText>
+                <ThemedText type="defaultSemiBold">{t('ai.backgroundTitle')}</ThemedText>
                 <TouchableOpacity onPress={() => setShowBackgroundModal(false)} style={styles.headerIconBtn}>
                   <Ionicons name="close" size={20} color={Colors[theme].text} />
                 </TouchableOpacity>
               </View>
 
-              <ThemedText style={[styles.strategyLabel, { color: Colors[theme].icon }]}>地点（可长期记录）</ThemedText>
+              <ThemedText style={[styles.strategyLabel, { color: Colors[theme].icon }]}>{t('ai.locationTitle')}</ThemedText>
               <View style={styles.locationInputRow}>
                 <TextInput
                   value={locationInput}
                   onChangeText={setLocationInput}
-                  placeholder="地点名称（例如：图书馆 4F 东区）"
+                  placeholder={t('ai.locationName')}
                   placeholderTextColor={Colors[theme].icon}
                   style={[
                     styles.locationInput,
@@ -478,7 +480,7 @@ export const GlobalAIAssistant = () => {
                 <TextInput
                   value={locationTimeInput}
                   onChangeText={setLocationTimeInput}
-                  placeholder="可用时间（例如：工作日 9:00-11:30）"
+                  placeholder={t('ai.locationTime')}
                   placeholderTextColor={Colors[theme].icon}
                   style={[
                     styles.locationInput,
@@ -490,7 +492,7 @@ export const GlobalAIAssistant = () => {
                 <TextInput
                   value={locationFeatureInput}
                   onChangeText={setLocationFeatureInput}
-                  placeholder="地点特点（例如：安静/有电源/可讨论）"
+                  placeholder={t('ai.locationFeature')}
                   placeholderTextColor={Colors[theme].icon}
                   style={[
                     styles.locationInput,
@@ -498,7 +500,7 @@ export const GlobalAIAssistant = () => {
                   ]}
                 />
                 <TouchableOpacity style={[styles.locationAddBtn, { backgroundColor: Colors[theme].tint }]} onPress={handleAddPreferredLocation}>
-                  <ThemedText style={styles.saveBackgroundBtnText}>添加</ThemedText>
+                  <ThemedText style={styles.saveBackgroundBtnText}>{t('ai.locationAdd')}</ThemedText>
                 </TouchableOpacity>
               </View>
               <View style={styles.locationListWrap}>
@@ -507,8 +509,8 @@ export const GlobalAIAssistant = () => {
                     <View key={`pref-location-${item.id}`} style={[styles.locationCard, { borderColor: Colors[theme].border, backgroundColor: theme === 'dark' ? '#1C1C1E' : '#F2F2F7' }]}>
                       <View style={{ flex: 1, gap: 2 }}>
                         <ThemedText style={{ fontSize: 12, fontWeight: '700' }} numberOfLines={1}>{item.name}</ThemedText>
-                        <ThemedText style={{ fontSize: 11, color: Colors[theme].icon }}>时间：{item.availableTimeDetail || '未填写'}</ThemedText>
-                        <ThemedText style={{ fontSize: 11, color: Colors[theme].icon }}>特点：{item.locationFeatures || '未填写'}</ThemedText>
+                        <ThemedText style={{ fontSize: 11, color: Colors[theme].icon }}>{t('ai.locationTimeLabel', { value: item.availableTimeDetail || t('ai.locationUnset') })}</ThemedText>
+                        <ThemedText style={{ fontSize: 11, color: Colors[theme].icon }}>{t('ai.locationFeatureLabel', { value: item.locationFeatures || t('ai.locationUnset') })}</ThemedText>
                       </View>
                       <TouchableOpacity onPress={() => removePreferredLocation(item.id)} style={styles.locationDeleteBtn}>
                         <Ionicons name="close" size={14} color={Colors[theme].icon} />
@@ -516,21 +518,21 @@ export const GlobalAIAssistant = () => {
                     </View>
                   ))
                 ) : (
-                  <ThemedText style={{ color: Colors[theme].icon, fontSize: 12 }}>暂无地点，添加后会长期保存</ThemedText>
+                  <ThemedText style={{ color: Colors[theme].icon, fontSize: 12 }}>{t('ai.locationEmpty')}</ThemedText>
                 )}
               </View>
 
               <View style={styles.mealTimeRow}>
                 <TouchableOpacity style={[styles.mealTimeBtn, { borderColor: Colors[theme].border }]} onPress={() => openMealTimePicker('breakfast')}>
-                  <ThemedText style={styles.mealTimeLabel}>早餐</ThemedText>
+                  <ThemedText style={styles.mealTimeLabel}>{t('ai.mealBreakfast')}</ThemedText>
                   <ThemedText>{schedulingBackgroundSettings.breakfastTime}</ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.mealTimeBtn, { borderColor: Colors[theme].border }]} onPress={() => openMealTimePicker('lunch')}>
-                  <ThemedText style={styles.mealTimeLabel}>午餐</ThemedText>
+                  <ThemedText style={styles.mealTimeLabel}>{t('ai.mealLunch')}</ThemedText>
                   <ThemedText>{schedulingBackgroundSettings.lunchTime}</ThemedText>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.mealTimeBtn, { borderColor: Colors[theme].border }]} onPress={() => openMealTimePicker('dinner')}>
-                  <ThemedText style={styles.mealTimeLabel}>晚餐</ThemedText>
+                  <ThemedText style={styles.mealTimeLabel}>{t('ai.mealDinner')}</ThemedText>
                   <ThemedText>{schedulingBackgroundSettings.dinnerTime}</ThemedText>
                 </TouchableOpacity>
               </View>
@@ -538,7 +540,7 @@ export const GlobalAIAssistant = () => {
               <TextInput
                 value={schedulingBackgroundSettings.hardConstraints}
                 onChangeText={(text) => updateSchedulingBackgroundField('hardConstraints', text)}
-                placeholder="强硬约束"
+                placeholder={t('ai.hardConstraints')}
                 placeholderTextColor={Colors[theme].icon}
                 multiline
                 style={[
@@ -550,7 +552,7 @@ export const GlobalAIAssistant = () => {
               <TextInput
                 value={schedulingBackgroundSettings.allowTaskDuringCourseNames}
                 onChangeText={(text) => updateSchedulingBackgroundField('allowTaskDuringCourseNames', text)}
-                placeholder="允许上课中安排任务的课程（逗号/换行分隔，例如：形势与政策, 大学体育）"
+                placeholder={t('ai.allowDuringCourse')}
                 placeholderTextColor={Colors[theme].icon}
                 multiline
                 style={[
@@ -559,7 +561,7 @@ export const GlobalAIAssistant = () => {
                 ]}
               />
               <ThemedText style={{ color: Colors[theme].icon, fontSize: 12 }}>
-                仅白名单课程允许上课时安排任务，且会优先要求教室/图书馆等学习环境。
+                {t('ai.allowHint')}
               </ThemedText>
 
               <TouchableOpacity
@@ -567,7 +569,7 @@ export const GlobalAIAssistant = () => {
                 onPress={() => void handleSaveBackground()}
                 disabled={isSavingSchedulingBackground}
               >
-                <ThemedText style={styles.saveBackgroundBtnText}>{isSavingSchedulingBackground ? '保存中...' : '保存设置'}</ThemedText>
+                <ThemedText style={styles.saveBackgroundBtnText}>{isSavingSchedulingBackground ? t('ai.saving') : t('ai.saveSettings')}</ThemedText>
               </TouchableOpacity>
               {backgroundStatusText ? <ThemedText style={{ color: Colors[theme].icon, fontSize: 12 }}>{backgroundStatusText}</ThemedText> : null}
             </View>
@@ -583,7 +585,7 @@ export const GlobalAIAssistant = () => {
           <View style={styles.innerModalOverlay}>
             <View style={[styles.innerModalCard, { backgroundColor: Colors[theme].background, borderColor: Colors[theme].border }]}> 
               <View style={styles.innerModalHeader}>
-                <ThemedText type="defaultSemiBold">目标层</ThemedText>
+                <ThemedText type="defaultSemiBold">{t('ai.goalsTitle')}</ThemedText>
                 <TouchableOpacity onPress={() => setShowGoalsModal(false)} style={styles.headerIconBtn}>
                   <Ionicons name="close" size={20} color={Colors[theme].text} />
                 </TouchableOpacity>
@@ -592,14 +594,14 @@ export const GlobalAIAssistant = () => {
               <TextInput
                 value={goalTitleInput}
                 onChangeText={setGoalTitleInput}
-                placeholder="目标内容（例如：今晚完成图论复盘）"
+                placeholder={t('ai.goalPlaceholder')}
                 placeholderTextColor={Colors[theme].icon}
                 style={[styles.goalInput, { borderColor: Colors[theme].border, color: Colors[theme].text, backgroundColor: theme === 'dark' ? '#1C1C1E' : '#F2F2F7' }]}
               />
 
               <View style={styles.goalCreateRow}>
                 <TouchableOpacity style={[styles.goalTimeBtn, { borderColor: Colors[theme].border }]} onPress={openGoalTimePicker}>
-                  <ThemedText style={{ fontSize: 12 }}>时间 {goalTargetTime}</ThemedText>
+                  <ThemedText style={{ fontSize: 12 }}>{t('ai.goalTime', { time: goalTargetTime })}</ThemedText>
                 </TouchableOpacity>
                 <View style={styles.goalExpectationRow}>
                   {(['low', 'medium', 'high'] as Array<'low' | 'medium' | 'high'>).map((level) => (
@@ -614,14 +616,14 @@ export const GlobalAIAssistant = () => {
                       ]}
                       onPress={() => setGoalExpectation(level)}
                     >
-                      <ThemedText style={{ fontSize: 12 }}>{level === 'low' ? '低' : level === 'high' ? '高' : '中'}</ThemedText>
+                      <ThemedText style={{ fontSize: 12 }}>{level === 'low' ? t('ai.expectationLow') : level === 'high' ? t('ai.expectationHigh') : t('ai.expectationMedium')}</ThemedText>
                     </TouchableOpacity>
                   ))}
                 </View>
               </View>
 
               <TouchableOpacity style={[styles.saveBackgroundBtn, { backgroundColor: Colors[theme].tint }]} onPress={() => void handleCreateGoal()}>
-                <ThemedText style={styles.saveBackgroundBtnText}>创建目标</ThemedText>
+                <ThemedText style={styles.saveBackgroundBtnText}>{t('ai.goalCreate')}</ThemedText>
               </TouchableOpacity>
 
               <ScrollView style={styles.goalListArea}>
@@ -631,16 +633,16 @@ export const GlobalAIAssistant = () => {
                       <View style={{ flex: 1 }}>
                         <ThemedText type="defaultSemiBold" numberOfLines={1}>{goal.title}</ThemedText>
                         <ThemedText style={{ fontSize: 12, color: Colors[theme].icon }}>
-                          {goal.targetTime} · 期望 {goal.expectation === 'low' ? '低' : goal.expectation === 'high' ? '高' : '中'}
+                          {goal.targetTime} · {t('profile.expectation')} {goal.expectation === 'low' ? t('ai.expectationLow') : goal.expectation === 'high' ? t('ai.expectationHigh') : t('ai.expectationMedium')}
                         </ThemedText>
                       </View>
                       <TouchableOpacity style={[styles.goalDeleteBtn, { borderColor: Colors[theme].border }]} onPress={() => void handleDeleteGoal(goal.id)}>
-                        <ThemedText style={{ fontSize: 12 }}>删除</ThemedText>
+                        <ThemedText style={{ fontSize: 12 }}>{t('common.delete')}</ThemedText>
                       </TouchableOpacity>
                     </View>
                   ))
                 ) : (
-                  <ThemedText style={{ color: Colors[theme].icon, fontSize: 12 }}>暂无目标，先创建一条</ThemedText>
+                  <ThemedText style={{ color: Colors[theme].icon, fontSize: 12 }}>{t('ai.goalEmpty')}</ThemedText>
                 )}
               </ScrollView>
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 
@@ -26,6 +27,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
   theme,
   onSave,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <View style={[styles.card, { backgroundColor: Colors[theme].background, borderColor: Colors[theme].icon }]}>
       <View style={styles.avatarContainer}>
@@ -41,7 +44,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
           <View style={styles.editForm}>
             <TextInput
               style={[styles.usernameInput, { color: Colors[theme].text, borderColor: Colors[theme].tint }]}
-              placeholder="输入用户名"
+              placeholder={t('profile.usernamePlaceholder')}
               placeholderTextColor={Colors[theme].icon}
               value={username}
               onChangeText={setUsername}
@@ -54,7 +57,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 onPress={onSave}
                 disabled={isLoading}
               >
-                {isLoading ? <ActivityIndicator color={theme === 'dark' ? '#000' : '#fff'} size="small" /> : <ThemedText style={[styles.smallButtonText, { color: theme === 'dark' ? '#000' : '#fff' }]}>保存</ThemedText>}
+                {isLoading ? <ActivityIndicator color={theme === 'dark' ? '#000' : '#fff'} size="small" /> : <ThemedText style={[styles.smallButtonText, { color: theme === 'dark' ? '#000' : '#fff' }]}>{t('common.save')}</ThemedText>}
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.smallButton, { backgroundColor: Colors[theme].icon, opacity: 0.5 }]}
@@ -64,21 +67,21 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({
                 }}
                 disabled={isLoading}
               >
-                <ThemedText style={styles.smallButtonText}>取消</ThemedText>
+                <ThemedText style={styles.smallButtonText}>{t('common.cancel')}</ThemedText>
               </TouchableOpacity>
             </View>
           </View>
         ) : (
           <View style={styles.nameRow}>
             <ThemedText type="subtitle" style={styles.usernameText}>
-              {profile?.username || '未设置昵称'}
+              {profile?.username || t('profile.usernameNotSet')}
             </ThemedText>
             <TouchableOpacity onPress={() => setIsEditing(true)} style={styles.editIcon}>
-              <ThemedText style={{ color: Colors[theme].tint, fontSize: 14 }}>✎ 修改</ThemedText>
+              <ThemedText style={{ color: Colors[theme].tint, fontSize: 14 }}>{t('profile.editProfile')}</ThemedText>
             </TouchableOpacity>
           </View>
         )}
-        <ThemedText style={styles.emailText}>{session?.user?.email || '未登录'}</ThemedText>
+        <ThemedText style={styles.emailText}>{session?.user?.email || t('profile.notLoggedIn')}</ThemedText>
       </View>
     </View>
   );

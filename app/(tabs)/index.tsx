@@ -1,7 +1,8 @@
 
-import React, { useMemo, useState } from 'react';
-import { Dimensions, Modal, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { Dimensions, StyleSheet, View } from 'react-native';
 import Animated, { interpolate, useAnimatedStyle } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 
 // --- Features & Components ---
 import { TimerHeader } from '@/modules/timer/components/TimerHeader';
@@ -10,13 +11,13 @@ import CircularSlider from '@/modules/timer/components/CircularSlider';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { CustomAlert } from '@/components/ui/custom-alert';
+import { FocusFeedbackCard } from '@/modules/home/components/FocusFeedbackCard';
+import { QuickCreateTaskModal } from '@/modules/home/components/QuickCreateTaskModal';
+import { formatTimerText, useHomeScreenController } from '@/modules/home/hooks/use-home-screen';
 
 // --- Contexts & Hooks ---
 import { useTheme } from '@/contexts/ThemeContext';
 import { useTimer } from '@/modules/timer/hooks/use-timer';
-import { useTaskStore } from '@/modules/schedule/store/useTaskStore';
-import { useUserStore } from '@/modules/auth/store/useUserStore';
-import { useTimerStore } from '@/modules/timer/store/useTimerStore';
 
 // ===================================
 // 常量定义 (Constants)
@@ -28,19 +29,12 @@ const CIRCLE_SIZE = width * 0.8;
 // 主组件 (HomeScreen)
 // ===================================
 export default function HomeScreen() {
+  const { t } = useTranslation();
   const { toggleTheme, activeTheme, theme: themeMode } = useTheme();
   
   const theme = themeMode;
   const colors = activeTheme.colors[themeMode];
   const AnimationComponent = activeTheme.AnimationComponent;
-  const [createTaskModalVisible, setCreateTaskModalVisible] = useState(false);
-  const [quickTaskTitle, setQuickTaskTitle] = useState('');
-  const [quickTaskMinutes, setQuickTaskMinutes] = useState('25');
-  const [quickCreateError, setQuickCreateError] = useState('');
-  const [isQuickCreating, setIsQuickCreating] = useState(false);
-  const addTask = useTaskStore((state) => state.addTask);
-  const { session } = useUserStore();
-  const setCurrentTask = useTimerStore((state) => state.setCurrentTask);
 
   // 使用逻辑钩子
   const {
@@ -50,75 +44,24 @@ export default function HomeScreen() {
     toggleTimer, resetTimer, handleEndSession, handleTimeChange, toggleMute, closeAlert,
   } = useTimer();
 
-  const canStartWithoutPrompt = useMemo(() => {
-    if (isSessionActive || isActive) {
-      return true;
-    }
-    return !!currentTask;
-  }, [isSessionActive, isActive, currentTask]);
-
-  const inheritedSliderMinutes = useMemo(() => {
-    const minutes = Math.round(timeLeft / 60);
-    return Math.max(5, Number.isFinite(minutes) ? minutes : 25);
-  }, [timeLeft]);
-
-  const handleToggleTimer = () => {
-    if (!canStartWithoutPrompt) {
-      setCreateTaskModalVisible(true);
-      setQuickTaskMinutes(String(inheritedSliderMinutes));
-      setQuickCreateError('');
-      return;
-    }
-    toggleTimer();
-  };
-
-  const handleCreateTaskAndStart = async () => {
-    const title = quickTaskTitle.trim();
-    const minutes = Math.max(1, Number.parseInt(quickTaskMinutes || String(inheritedSliderMinutes), 10) || inheritedSliderMinutes);
-
-    if (!title) {
-      setQuickCreateError('请先输入专注任务名称。');
-      return;
-    }
-
-    setIsQuickCreating(true);
-    setQuickCreateError('');
-
-    try {
-      const startIso = new Date().toISOString();
-      await addTask(
-        {
-          title,
-          description: '由专注页快速创建',
-          start_time: startIso,
-          estimated_duration: Math.max(5, minutes) * 60,
-          is_deadline: false,
-          color: '#AF52DE',
-        },
-        session?.user?.id || null
-      );
-
-      const latestTasks = useTaskStore.getState().tasks;
-      const createdTask =
-        latestTasks.find((task) => task.title === title && task.start_time === startIso) || latestTasks[0] || null;
-
-      if (!createdTask) {
-        setQuickCreateError('任务创建成功但未找到任务，请到日程页重试。');
-        return;
-      }
-
-      setCurrentTask(createdTask);
-      setCreateTaskModalVisible(false);
-      setQuickTaskTitle('');
-      setQuickTaskMinutes(String(inheritedSliderMinutes));
-      toggleTimer();
-    } catch (error) {
-      console.error('Quick create focus task failed:', error);
-      setQuickCreateError('创建任务失败，请稍后再试。');
-    } finally {
-      setIsQuickCreating(false);
-    }
-  };
+  const {
+    createTaskModalVisible,
+    quickTaskTitle,
+    quickTaskMinutes,
+    quickCreateError,
+    isQuickCreating,
+    setQuickTaskTitle,
+    setQuickTaskMinutes,
+    closeQuickCreateModal,
+    handleToggleTimer,
+    handleCreateTaskAndStart,
+  } = useHomeScreenController({
+    isSessionActive,
+    isActive,
+    timeLeft,
+    currentTask,
+    toggleTimer,
+  });
 
   // ---------------------------------
   // 动画样式定义 (Animated Styles)
@@ -138,14 +81,6 @@ export default function HomeScreen() {
     ],
   }));
 
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    if (hours > 0) return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
   // ---------------------------------
   // 渲染界面 (Render)
   // ---------------------------------
@@ -163,27 +98,16 @@ export default function HomeScreen() {
       {isGuest && (
         <ThemedView style={styles.guestNotice}>
           <ThemedText style={[styles.guestNoticeText, { color: colors.text }]}>
-            游客模式无法上传数据，如需请在“我的-设置”中退出注册
+            {t('home.guestNotice')}
           </ThemedText>
         </ThemedView>
       )}
 
-      {focusFeedback.visible && (
-        <ThemedView style={[styles.feedbackCard, { borderColor: colors.tint + '55', backgroundColor: colors.tint + '12' }]}>
-          <View style={styles.feedbackHeaderRow}>
-            <ThemedText type="defaultSemiBold" style={styles.feedbackTitle}>{focusFeedback.title}</ThemedText>
-            <TouchableOpacity onPress={dismissFocusFeedback} hitSlop={8}>
-              <ThemedText style={{ opacity: 0.65 }}>关闭</ThemedText>
-            </TouchableOpacity>
-          </View>
-          <ThemedText style={styles.feedbackSummary}>{focusFeedback.summary}</ThemedText>
-          <View style={styles.feedbackMetricsRow}>
-            <ThemedText style={styles.feedbackMetric}>学习 {focusFeedback.learningDelta >= 0 ? '+' : ''}{focusFeedback.learningDelta}</ThemedText>
-            <ThemedText style={styles.feedbackMetric}>能量 {focusFeedback.energyDelta >= 0 ? '+' : ''}{focusFeedback.energyDelta}</ThemedText>
-            <ThemedText style={styles.feedbackMetric}>疲劳 {focusFeedback.fatigueDelta >= 0 ? '+' : ''}{focusFeedback.fatigueDelta}</ThemedText>
-          </View>
-        </ThemedView>
-      )}
+      <FocusFeedbackCard
+        focusFeedback={focusFeedback}
+        tintColor={colors.tint}
+        onDismiss={dismissFocusFeedback}
+      />
 
       <ThemedView style={styles.timerContainer}>
         <View style={styles.sliderWrapper}>
@@ -209,10 +133,12 @@ export default function HomeScreen() {
 
           <Animated.View style={[styles.timeTextContainer, timeTextStyle]}>
             <ThemedText type="title" style={styles.timerText}>
-              {formatTime(timeLeft)}
+              {formatTimerText(timeLeft)}
             </ThemedText>
             <ThemedText type="subtitle" style={styles.statusText}>
-              {isActive ? '专注中...' : (isSessionActive ? '暂停中' : '滑动调整')}
+              {isActive
+                ? t('home.status.focusing')
+                : (isSessionActive ? t('home.status.paused') : t('home.status.adjust'))}
             </ThemedText>
           </Animated.View>
         </View>
@@ -236,70 +162,23 @@ export default function HomeScreen() {
         onClose={closeAlert}
       />
 
-      <Modal
+      <QuickCreateTaskModal
         visible={createTaskModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setCreateTaskModalVisible(false)}
-      >
-        <View style={styles.modalMask}>
-          <View style={[styles.quickModalCard, { backgroundColor: colors.background }]}> 
-            <ThemedText type="subtitle" style={styles.quickModalTitle}>开始专注前先创建任务</ThemedText>
-            <ThemedText style={[styles.quickModalHint, { color: colors.text }]}>需要绑定一个“正在专注”的任务，创建后将自动开始专注。</ThemedText>
-
-            <TextInput
-              value={quickTaskTitle}
-              onChangeText={setQuickTaskTitle}
-              placeholder="例如：线代作业第3题"
-              placeholderTextColor={theme === 'dark' ? '#6B7280' : '#9CA3AF'}
-              style={[
-                styles.quickInput,
-                {
-                  borderColor: theme === 'dark' ? '#374151' : '#D1D5DB',
-                  color: colors.text,
-                  backgroundColor: theme === 'dark' ? '#111827' : '#F8FAFC',
-                },
-              ]}
-            />
-
-            <TextInput
-              value={quickTaskMinutes}
-              onChangeText={setQuickTaskMinutes}
-              keyboardType="number-pad"
-              placeholder="时长（分钟）"
-              placeholderTextColor={theme === 'dark' ? '#6B7280' : '#9CA3AF'}
-              style={[
-                styles.quickInput,
-                {
-                  borderColor: theme === 'dark' ? '#374151' : '#D1D5DB',
-                  color: colors.text,
-                  backgroundColor: theme === 'dark' ? '#111827' : '#F8FAFC',
-                },
-              ]}
-            />
-
-            {!!quickCreateError && <ThemedText style={styles.quickErrorText}>{quickCreateError}</ThemedText>}
-
-            <View style={styles.quickModalActions}>
-              <TouchableOpacity
-                style={[styles.quickBtn, styles.quickBtnGhost, { borderColor: theme === 'dark' ? '#4B5563' : '#CBD5E1' }]}
-                onPress={() => setCreateTaskModalVisible(false)}
-                disabled={isQuickCreating}
-              >
-                <ThemedText>取消</ThemedText>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.quickBtn, { backgroundColor: colors.tint }]}
-                onPress={handleCreateTaskAndStart}
-                disabled={isQuickCreating}
-              >
-                <ThemedText style={{ color: '#fff', fontWeight: '600' }}>{isQuickCreating ? '创建中...' : '创建并开始'}</ThemedText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        theme={theme}
+        colors={{
+          background: colors.background,
+          text: colors.text,
+          tint: colors.tint,
+        }}
+        quickTaskTitle={quickTaskTitle}
+        quickTaskMinutes={quickTaskMinutes}
+        quickCreateError={quickCreateError}
+        isQuickCreating={isQuickCreating}
+        onChangeTitle={setQuickTaskTitle}
+        onChangeMinutes={setQuickTaskMinutes}
+        onClose={closeQuickCreateModal}
+        onCreateAndStart={handleCreateTaskAndStart}
+      />
     </ThemedView>
   );
 }
@@ -353,82 +232,6 @@ const styles = StyleSheet.create({
   guestNoticeText: {
     fontSize: 12,
     opacity: 0.8,
-  },
-  modalMask: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  quickModalCard: {
-    borderRadius: 16,
-    padding: 16,
-    gap: 10,
-  },
-  quickModalTitle: {
-    fontSize: 18,
-  },
-  quickModalHint: {
-    opacity: 0.75,
-    fontSize: 13,
-    marginBottom: 2,
-  },
-  quickInput: {
-    height: 42,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    fontSize: 14,
-  },
-  quickErrorText: {
-    color: '#EF4444',
-    fontSize: 12,
-  },
-  quickModalActions: {
-    marginTop: 4,
-    flexDirection: 'row',
-    gap: 10,
-  },
-  quickBtn: {
-    flex: 1,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  quickBtnGhost: {
-    borderWidth: 1,
-  },
-  feedbackCard: {
-    width: '100%',
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    marginBottom: 10,
-    gap: 4,
-  },
-  feedbackHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  feedbackTitle: {
-    fontSize: 14,
-  },
-  feedbackSummary: {
-    fontSize: 12,
-    opacity: 0.78,
-  },
-  feedbackMetricsRow: {
-    marginTop: 2,
-    flexDirection: 'row',
-    gap: 10,
-  },
-  feedbackMetric: {
-    fontSize: 12,
-    fontWeight: '600',
-    opacity: 0.9,
   },
 });
 

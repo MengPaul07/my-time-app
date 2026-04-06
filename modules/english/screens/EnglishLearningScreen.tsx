@@ -1,11 +1,7 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Svg, { Circle } from 'react-native-svg';
-
 import { Colors } from '@/components/constants/theme';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useUserStore } from '@/modules/auth/store/useUserStore';
 import { useTaskStore } from '@/modules/schedule/store/useTaskStore';
@@ -168,7 +164,7 @@ const getSkillModuleByText = (text: string): SkillModuleId => {
   return bestScore >= 0.2 ? best : 'vocabulary';
 };
 
-export default function EnglishLearningScreen() {
+export function useEnglishScreen() {
   const colorScheme = useColorScheme();
   const theme = (colorScheme ?? 'light') as ThemeType;
   const palette = Colors[theme];
@@ -593,513 +589,48 @@ export default function EnglishLearningScreen() {
     return withAlpha(palette.tint, 0.9);
   };
 
-  return (
-    <ThemedView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <ThemedText type="title" style={styles.title}>英语学习</ThemedText>
-        <ThemedText style={[styles.subtitle, { color: palette.icon }]}>日常积累任务驱动的英语成长追踪</ThemedText>
-
-        <View style={[styles.heroCard, { backgroundColor: palette.card, borderColor: palette.border }]}> 
-          <View style={[styles.globalRankBadge, { backgroundColor: withAlpha(globalRank.color, 0.14), borderColor: withAlpha(globalRank.color, 0.5) }]}>
-            <ThemedText style={[styles.globalRankText, { color: globalRank.color }]}>英语段位：{globalRank.name}</ThemedText>
-          </View>
-
-          <View style={styles.metricCompactRow}>
-            <View style={[styles.metricCompactItem, { borderColor: palette.border, backgroundColor: palette.background }]}>
-              <ThemedText style={[styles.metricCompactLabel, { color: palette.icon }]}>累计记录</ThemedText>
-              <ThemedText type="defaultSemiBold" style={styles.metricCompactValue}>{records.length}</ThemedText>
-            </View>
-            <View style={[styles.metricCompactItem, { borderColor: palette.border, backgroundColor: palette.background }]}>
-              <ThemedText style={[styles.metricCompactLabel, { color: palette.icon }]}>勾选任务</ThemedText>
-              <ThemedText type="defaultSemiBold" style={styles.metricCompactValue}>{selectedCount}</ThemedText>
-            </View>
-            <View style={[styles.metricCompactItem, { borderColor: palette.border, backgroundColor: palette.background }]}>
-              <ThemedText style={[styles.metricCompactLabel, { color: palette.icon }]}>全局加点</ThemedText>
-              <ThemedText type="defaultSemiBold" style={styles.metricCompactValue}>{totalKnowledgeExp}</ThemedText>
-            </View>
-          </View>
-        </View>
-
-        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}> 
-          <ThemedText type="subtitle" style={styles.cardTitle}>学习反馈（勾选日程任务/课程后加点）</ThemedText>
-          <ThemedText style={{ color: palette.icon, fontSize: 12 }}>从你勾选的任务与课程自动判断技能与难度，再进行模块加点。</ThemedText>
-
-          <View style={styles.feedbackToggleRow}>
-            <TouchableOpacity
-              style={[
-                styles.diffBtn,
-                {
-                  borderColor: letLLMInferSkills ? palette.tint : palette.border,
-                  backgroundColor: letLLMInferSkills ? withAlpha(palette.tint, 0.12) : palette.background,
-                },
-              ]}
-              onPress={() => setLetLLMInferSkills((prev) => !prev)}
-            >
-              <ThemedText style={{ fontSize: 12 }}>{letLLMInferSkills ? '技能：LLM 自动判断' : '技能：手动勾选'}</ThemedText>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.diffBtn,
-                {
-                  borderColor: letLLMInferDifficulty ? palette.tint : palette.border,
-                  backgroundColor: letLLMInferDifficulty ? withAlpha(palette.tint, 0.12) : palette.background,
-                },
-              ]}
-              onPress={() => setLetLLMInferDifficulty((prev) => !prev)}
-            >
-              <ThemedText style={{ fontSize: 12 }}>{letLLMInferDifficulty ? '难度：LLM 自动判断' : '难度：手动选择'}</ThemedText>
-            </TouchableOpacity>
-          </View>
-
-          {!letLLMInferDifficulty ? (
-            <View style={styles.difficultyRow}>
-              {DIFFICULTY_ORDER.map((item) => (
-                <TouchableOpacity
-                  key={`en-diff-${item}`}
-                  style={[
-                    styles.diffBtn,
-                    {
-                      borderColor: manualDifficulty === item ? palette.tint : palette.border,
-                      backgroundColor: manualDifficulty === item ? withAlpha(palette.tint, 0.12) : palette.background,
-                    },
-                  ]}
-                  onPress={() => setManualDifficulty(item)}
-                >
-                  <ThemedText style={{ fontSize: 11 }}>{DIFFICULTY_LABELS[item]}</ThemedText>
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : null}
-
-          {!letLLMInferSkills ? (
-            <View style={styles.difficultyRow}>
-              {(Object.keys(SKILL_LABELS) as SkillModuleId[]).map((skill) => (
-                <TouchableOpacity
-                  key={`skill-${skill}`}
-                  style={[
-                    styles.diffBtn,
-                    {
-                      borderColor: manualSkills[skill] ? palette.tint : palette.border,
-                      backgroundColor: manualSkills[skill] ? withAlpha(palette.tint, 0.12) : palette.background,
-                    },
-                  ]}
-                  onPress={() =>
-                    setManualSkills((prev) => ({
-                      ...prev,
-                      [skill]: !prev[skill],
-                    }))
-                  }
-                >
-                  <ThemedText style={{ fontSize: 11 }}>{SKILL_LABELS[skill]}</ThemedText>
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : null}
-
-          <TextInput
-            value={noteInput}
-            onChangeText={setNoteInput}
-            placeholder="补充说明（选填，例如：今天听力做了精听+复述）"
-            placeholderTextColor={palette.icon}
-            multiline
-            style={[styles.feedbackTextarea, { borderColor: palette.border, color: palette.text, backgroundColor: palette.background }]}
-          />
-
-          <View style={styles.selectionList}>
-            {selectableItems.length > 0 ? (
-              selectableItems.map((item) => (
-                <TouchableOpacity
-                  key={item.id}
-                  style={[
-                    styles.selectionRow,
-                    {
-                      borderColor: selectedItemIds[item.id] ? palette.tint : palette.border,
-                      backgroundColor: selectedItemIds[item.id] ? withAlpha(palette.tint, 0.1) : palette.background,
-                    },
-                  ]}
-                  onPress={() =>
-                    setSelectedItemIds((prev) => ({
-                      ...prev,
-                      [item.id]: !prev[item.id],
-                    }))
-                  }
-                >
-                  <View style={{ flex: 1 }}>
-                    <ThemedText type="defaultSemiBold" numberOfLines={1}>{item.title}</ThemedText>
-                    <ThemedText style={{ color: palette.icon, fontSize: 12 }}>{item.type === 'task' ? '任务' : '课程'} · {item.detail}</ThemedText>
-                  </View>
-                  <ThemedText style={{ color: selectedItemIds[item.id] ? palette.tint : palette.icon, fontSize: 12, fontWeight: '700' }}>
-                    {selectedItemIds[item.id] ? '已选' : '勾选'}
-                  </ThemedText>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <ThemedText style={{ color: palette.icon, fontSize: 12 }}>暂无可用日程任务/课程，请先去日程页添加。</ThemedText>
-            )}
-          </View>
-
-          <TouchableOpacity
-            style={[styles.submitFeedbackBtn, { backgroundColor: isSubmitting ? palette.border : palette.tint }]}
-            onPress={() => void submitSelectedPractice()}
-            disabled={isSubmitting}
-          >
-            <ThemedText style={{ color: '#fff', fontWeight: '700' }}>{isSubmitting ? '处理中...' : '根据勾选内容分析并加点'}</ThemedText>
-          </TouchableOpacity>
-
-          {statusText ? <ThemedText style={{ color: palette.icon }}>{statusText}</ThemedText> : null}
-        </View>
-
-        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}> 
-          <ThemedText type="subtitle" style={styles.cardTitle}>模块进度（简化版）</ThemedText>
-          <View style={styles.ringGrid}>
-            {modules
-              .slice()
-              .sort((a, b) => b.totalExp - a.totalExp)
-              .map((module) => {
-                const need = moduleLevelThreshold(module.level);
-                const progress = need > 0 ? Math.min(1, Math.max(0, module.exp / need)) : 0;
-                const dashOffset = RING_CIRCUMFERENCE * (1 - progress);
-                return (
-                  <View
-                    key={module.id}
-                    style={[
-                      styles.ringItem,
-                      {
-                        borderColor: palette.border,
-                        backgroundColor: palette.background,
-                      },
-                    ]}
-                  >
-                    <View style={styles.ringWrap}>
-                      <Svg width={RING_SIZE} height={RING_SIZE}>
-                        <Circle
-                          cx={RING_SIZE / 2}
-                          cy={RING_SIZE / 2}
-                          r={RING_RADIUS}
-                          stroke={withAlpha(palette.border, 0.55)}
-                          strokeWidth={RING_STROKE}
-                          fill="none"
-                        />
-                        <Circle
-                          cx={RING_SIZE / 2}
-                          cy={RING_SIZE / 2}
-                          r={RING_RADIUS}
-                          stroke={palette.tint}
-                          strokeWidth={RING_STROKE}
-                          strokeLinecap="round"
-                          strokeDasharray={`${RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
-                          strokeDashoffset={dashOffset}
-                          fill="none"
-                          transform={`rotate(-90 ${RING_SIZE / 2} ${RING_SIZE / 2})`}
-                        />
-                      </Svg>
-                      <View style={styles.ringCenterLabel}>
-                        <ThemedText type="defaultSemiBold" style={styles.ringPercentText}>{Math.round(progress * 100)}%</ThemedText>
-                      </View>
-                    </View>
-
-                    <ThemedText type="defaultSemiBold" numberOfLines={1}>{module.name}</ThemedText>
-                    <ThemedText style={[styles.ringMetaText, { color: palette.icon }]}>Lv.{module.level}</ThemedText>
-                  </View>
-                );
-              })}
-          </View>
-        </View>
-
-        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}> 
-          <ThemedText type="subtitle" style={styles.cardTitle}>积累任务热力图（单词 / 听力 / 口语）</ThemedText>
-          <ThemedText style={{ color: palette.icon, marginBottom: 6 }}>
-            {contributionHeatmap.startLabel} ~ {contributionHeatmap.endLabel} · 累积练习 {contributionHeatmap.total}
-          </ThemedText>
-          {contributionHeatmap.weeks.length > 0 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} nestedScrollEnabled>
-              <View style={styles.heatmapBoard}>
-                <View style={styles.heatmapMonthRow}>
-                  <View style={styles.heatmapYAxisSpace} />
-                  <View style={[styles.heatmapMonthCells, { width: heatmapGridWidth }]}> 
-                    {contributionHeatmap.monthSpans.map((item, index) => (
-                      <View
-                        key={`month-span-${index}`}
-                        style={{
-                          width: item.weeks * heatmapCellSize + Math.max(0, item.weeks - 1) * HEATMAP_GRID_GAP,
-                          justifyContent: 'flex-start',
-                        }}
-                      >
-                        <ThemedText style={[styles.heatmapMonthLabel, { color: palette.icon }]} numberOfLines={1}>
-                          {item.label}
-                        </ThemedText>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-
-                {[0, 1, 2, 3, 4, 5, 6].map((weekday) => (
-                  <View key={`weekday-${weekday}`} style={styles.heatmapRow}>
-                    <ThemedText style={[styles.heatmapLabel, { color: palette.icon }]}> {weekday === 1 ? 'Mon' : weekday === 3 ? 'Wed' : weekday === 5 ? 'Fri' : ''} </ThemedText>
-                    <View style={[styles.heatmapCellsRow, { width: heatmapGridWidth }]}> 
-                      {contributionHeatmap.weeks.map((week, weekIndex) => {
-                        const count = week.counts[weekday] ?? 0;
-                        return (
-                          <View
-                            key={`cell-${weekday}-${weekIndex}`}
-                            style={[
-                              styles.heatCell,
-                              {
-                                width: heatmapCellSize,
-                                height: heatmapCellSize,
-                                backgroundColor: getHeatColor(count),
-                              },
-                            ]}
-                          />
-                        );
-                      })}
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </ScrollView>
-          ) : (
-            <ThemedText style={[styles.emptyText, { color: palette.icon }]}>暂无可视化热力图数据</ThemedText>
-          )}
-        </View>
-
-        <View style={[styles.card, { backgroundColor: palette.card, borderColor: palette.border }]}> 
-          <ThemedText type="subtitle" style={styles.cardTitle}>最近学习反馈</ThemedText>
-          {records.length > 0 ? (
-            records.slice(0, 10).map((record) => {
-              const totalGain = Object.values(record.points || {}).reduce((sum, value) => sum + value, 0);
-              return (
-                <View key={record.id} style={[styles.reasonItem, { borderColor: palette.border, backgroundColor: palette.background }]}> 
-                  <View style={styles.reasonHeaderRow}>
-                    <ThemedText type="defaultSemiBold" numberOfLines={1} style={{ flex: 1 }}>
-                      {record.selectedItemTitles.join('、') || '未命名记录'}
-                    </ThemedText>
-                    <ThemedText style={{ color: palette.icon, fontSize: 12 }}>
-                      {DIFFICULTY_LABELS[record.difficulty]} · +{totalGain}
-                    </ThemedText>
-                  </View>
-
-                  <ThemedText style={{ color: palette.icon, fontSize: 12 }}>
-                    技能：{record.skills.map((id) => SKILL_LABELS[id]).join(' / ')}
-                  </ThemedText>
-                  <ThemedText style={[styles.reasonText, { color: palette.text }]}>分析理由：{record.analysisReason || '按勾选任务分析。'}</ThemedText>
-                  <ThemedText style={[styles.reasonText, { color: palette.text }]}>加点理由：{record.pointReason || '按难度与模块等级衰减计算。'}</ThemedText>
-                </View>
-              );
-            })
-          ) : (
-            <ThemedText style={[styles.emptyText, { color: palette.icon }]}>暂无反馈记录，先勾选任务提交一次吧</ThemedText>
-          )}
-        </View>
-      </ScrollView>
-    </ThemedView>
-  );
+  return {
+    theme,
+    palette,
+    chartWidth,
+    records,
+    modules,
+    selectedItemIds,
+    setSelectedItemIds,
+    noteInput,
+    setNoteInput,
+    letLLMInferSkills,
+    setLetLLMInferSkills,
+    letLLMInferDifficulty,
+    setLetLLMInferDifficulty,
+    manualDifficulty,
+    setManualDifficulty,
+    manualSkills,
+    setManualSkills,
+    statusText,
+    isSubmitting,
+    selectableItems,
+    selectedCount,
+    totalKnowledgeExp,
+    globalRank,
+    contributionHeatmap,
+    heatmapCellSize,
+    heatmapGridWidth,
+    getHeatColor,
+    submitSelectedPractice,
+  };
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  content: {
-    padding: 18,
-    paddingTop: 56,
-    paddingBottom: 38,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    lineHeight: 28,
-    marginBottom: 4,
-  },
-  subtitle: {
-    marginBottom: 14,
-  },
-  heroCard: {
-    borderWidth: 1,
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 12,
-    gap: 8,
-  },
-  globalRankBadge: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    alignSelf: 'flex-start',
-  },
-  globalRankText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  metricCompactRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  metricCompactItem: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-  },
-  metricCompactLabel: {
-    fontSize: 10,
-    marginBottom: 1,
-  },
-  metricCompactValue: {
-    fontSize: 14,
-  },
-  card: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 14,
-    gap: 6,
-  },
-  cardTitle: {
-    marginBottom: 4,
-  },
-  emptyText: {
-    marginVertical: 8,
-  },
-  feedbackTextarea: {
-    borderWidth: 1,
-    borderRadius: 10,
-    minHeight: 80,
-    paddingHorizontal: 11,
-    paddingVertical: 10,
-    fontSize: 13,
-    textAlignVertical: 'top',
-  },
-  difficultyRow: {
-    flexDirection: 'row',
-    gap: 6,
-    flexWrap: 'wrap',
-  },
-  feedbackToggleRow: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  diffBtn: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  submitFeedbackBtn: {
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 11,
-  },
-  selectionList: {
-    gap: 8,
-    marginTop: 2,
-    marginBottom: 4,
-  },
-  selectionRow: {
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  ringGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-  },
-  ringItem: {
-    width: '31%',
-    minWidth: 98,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    gap: 2,
-  },
-  ringWrap: {
-    width: RING_SIZE,
-    height: RING_SIZE,
-    marginBottom: 4,
-  },
-  ringCenterLabel: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    width: RING_SIZE,
-    height: RING_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringPercentText: {
-    fontSize: 12,
-  },
-  ringMetaText: {
-    fontSize: 11,
-    lineHeight: 15,
-  },
-  reasonItem: {
-    borderWidth: 1,
-    borderRadius: 10,
-    padding: 10,
-    marginTop: 8,
-    gap: 4,
-  },
-  reasonHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  reasonText: {
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  heatmapBoard: {
-    gap: HEATMAP_GRID_GAP,
-    paddingBottom: 2,
-  },
-  heatmapMonthRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  heatmapYAxisSpace: {
-    width: HEATMAP_Y_AXIS_WIDTH,
-  },
-  heatmapMonthCells: {
-    flexDirection: 'row',
-    gap: HEATMAP_GRID_GAP,
-  },
-  heatmapMonthLabel: {
-    fontSize: 11,
-  },
-  heatmapRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: HEATMAP_GRID_GAP,
-  },
-  heatmapLabel: {
-    width: HEATMAP_Y_AXIS_WIDTH,
-    fontSize: 12,
-  },
-  heatmapCellsRow: {
-    flexDirection: 'row',
-    gap: HEATMAP_GRID_GAP,
-  },
-  heatCell: {
-    width: 12,
-    height: 12,
-    borderRadius: 1,
-    borderWidth: 0,
-  },
-});
+export {
+  DIFFICULTY_LABELS,
+  DIFFICULTY_ORDER,
+  HEATMAP_GRID_GAP,
+  HEATMAP_Y_AXIS_WIDTH,
+  RING_CIRCUMFERENCE,
+  RING_RADIUS,
+  RING_SIZE,
+  RING_STROKE,
+  SKILL_LABELS,
+};
+
+export type { DifficultyLevel, SkillModuleId };

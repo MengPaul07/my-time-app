@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -24,6 +25,7 @@ export const LeaderboardItem: React.FC<LeaderboardItemProps> = ({
   theme,
   formatDuration,
 }) => {
+  const { t } = useTranslation();
   const isTop3 = index < 3;
   const rankColor = index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : Colors[theme].text;
   const avatarLetter = item.username ? item.username[0].toUpperCase() : 'U';
@@ -45,11 +47,11 @@ export const LeaderboardItem: React.FC<LeaderboardItemProps> = ({
       {/* User Info */}
       <View style={styles.userInfo}>
         <ThemedText type="defaultSemiBold" style={{ fontSize: 16 }}>
-          {item.username || `用户 ${item.user_id.slice(0, 4)}`}
+          {item.username || t('leaderboard.userFallback', { id: item.user_id.slice(0, 4) })}
         </ThemedText>
         {item.last_task_title && (
           <ThemedText numberOfLines={1} style={{ fontSize: 12, opacity: 0.5, marginTop: 2 }}>
-            最近: {item.last_task_title}
+            {t('leaderboard.recent')}: {item.last_task_title}
           </ThemedText>
         )}
       </View>

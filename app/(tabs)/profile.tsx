@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, TouchableOpacity, View, TextInput } from 'react
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTranslation } from 'react-i18next';
 
 import { Colors } from '@/components/constants/theme';
 import { ThemedText } from '@/components/themed-text';
@@ -37,6 +38,7 @@ export default function ProfileScreen() {
   const router = useRouter(); // <--- Add Hook
   const colorScheme = useColorScheme();
   const theme = colorScheme ?? 'light';
+  const { t } = useTranslation();
 
   // 使用逻辑钩子
   const {
@@ -118,9 +120,9 @@ export default function ProfileScreen() {
     setIsSavingHandle(true);
     try {
       await AsyncStorage.setItem(STORAGE_CF_HANDLE, nextHandle);
-      setToastConfig({ visible: true, message: 'CF Handle 已保存', type: 'success' });
+      setToastConfig({ visible: true, message: t('profile.handleSaved'), type: 'success' });
     } catch {
-      setToastConfig({ visible: true, message: '保存失败，请重试', type: 'error' });
+      setToastConfig({ visible: true, message: t('profile.handleSaveFail'), type: 'error' });
     } finally {
       setIsSavingHandle(false);
     }
@@ -138,23 +140,23 @@ export default function ProfileScreen() {
   };
 
   const getCountdownText = (targetDate: string) => {
-    if (!isValidDateInput(targetDate)) return '未设置日期';
+    if (!isValidDateInput(targetDate)) return t('profile.countdownUnset');
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const target = new Date(`${targetDate}T00:00:00`);
     const diffDays = Math.ceil((target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
     if (diffDays > 0) return `D-${diffDays}`;
-    if (diffDays === 0) return '今天';
-    return `已过 ${Math.abs(diffDays)} 天`;
+    if (diffDays === 0) return t('profile.countdownToday');
+    return t('profile.countdownPassed', { days: Math.abs(diffDays) });
   };
 
   const getCountdownMeta = (targetDate: string): { text: string; tone: 'urgent' | 'normal' | 'passed' | 'unknown' } => {
-    if (!isValidDateInput(targetDate)) return { text: '未设置', tone: 'unknown' };
+    if (!isValidDateInput(targetDate)) return { text: t('profile.countdownUnknown'), tone: 'unknown' };
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const target = new Date(`${targetDate}T00:00:00`);
     const diffDays = Math.ceil((target.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
-    if (diffDays < 0) return { text: `+${Math.abs(diffDays)}天`, tone: 'passed' };
+    if (diffDays < 0) return { text: t('profile.countdownPassed', { days: Math.abs(diffDays) }), tone: 'passed' };
     if (diffDays <= 3) return { text: `D-${diffDays}`, tone: 'urgent' };
     return { text: `D-${diffDays}`, tone: 'normal' };
   };
@@ -163,11 +165,11 @@ export default function ProfileScreen() {
     const title = longGoalTitleInput.trim();
     const targetDate = longGoalDateInput.trim();
     if (!title) {
-      setToastConfig({ visible: true, message: '请先填写长期目标内容', type: 'error' });
+      setToastConfig({ visible: true, message: t('profile.longGoalRequired'), type: 'error' });
       return;
     }
     if (targetDate && !isValidDateInput(targetDate)) {
-      setToastConfig({ visible: true, message: '日期格式应为 YYYY-MM-DD', type: 'error' });
+      setToastConfig({ visible: true, message: t('profile.longGoalDateInvalid'), type: 'error' });
       return;
     }
 
@@ -187,9 +189,9 @@ export default function ProfileScreen() {
       setLongGoalTitleInput('');
       setLongGoalDateInput('');
       setLongGoalExpectation('high');
-      setToastConfig({ visible: true, message: '长期目标已保存', type: 'success' });
+      setToastConfig({ visible: true, message: t('profile.longGoalSaved'), type: 'success' });
     } catch {
-      setToastConfig({ visible: true, message: '长期目标保存失败', type: 'error' });
+      setToastConfig({ visible: true, message: t('profile.longGoalSaveFail'), type: 'error' });
     } finally {
       setIsSavingLongGoals(false);
     }
@@ -199,9 +201,9 @@ export default function ProfileScreen() {
     try {
       const next = longTermGoals.filter((item) => item.id !== goalId);
       await saveLongTermGoals(next);
-      setToastConfig({ visible: true, message: '已删除长期目标', type: 'success' });
+      setToastConfig({ visible: true, message: t('profile.longGoalDeleted'), type: 'success' });
     } catch {
-      setToastConfig({ visible: true, message: '删除失败，请重试', type: 'error' });
+      setToastConfig({ visible: true, message: t('profile.longGoalDeleteFail'), type: 'error' });
     }
   };
 
@@ -214,7 +216,7 @@ export default function ProfileScreen() {
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <ThemedText type="subtitle" style={styles.pageTitle}>个人中心</ThemedText>
+          <ThemedText type="subtitle" style={styles.pageTitle}>{t('profile.title')}</ThemedText>
           <TouchableOpacity onPress={() => setIsSettingsVisible(true)} style={styles.settingsButton}>
             <Ionicons name="settings-outline" size={24} color={Colors[theme].text} />
           </TouchableOpacity>
@@ -225,7 +227,7 @@ export default function ProfileScreen() {
           <TextInput
             value={cfHandleInput}
             onChangeText={setCfHandleInput}
-            placeholder="例如 tourist"
+            placeholder={t('profile.handlePlaceholder')}
             placeholderTextColor={Colors[theme].icon}
             autoCapitalize="none"
             style={[
@@ -242,16 +244,16 @@ export default function ProfileScreen() {
             style={[styles.handleSaveBtn, { backgroundColor: Colors[theme].tint }]}
             disabled={isSavingHandle}
           >
-            <ThemedText style={styles.handleSaveText}>{isSavingHandle ? '保存中...' : '保存 Handle'}</ThemedText>
+            <ThemedText style={styles.handleSaveText}>{isSavingHandle ? t('profile.handleSaving') : t('profile.handleSave')}</ThemedText>
           </TouchableOpacity>
         </ThemedView>
 
         <ThemedView style={[styles.handleCard, { borderColor: Colors[theme].border }]}>
-          <ThemedText type="defaultSemiBold">长期目标（Profile）</ThemedText>
+          <ThemedText type="defaultSemiBold">{t('profile.longGoalTitle')}</ThemedText>
           <TextInput
             value={longGoalTitleInput}
             onChangeText={setLongGoalTitleInput}
-            placeholder="目标内容（例如：期末考试 / 面试 / 项目里程碑）"
+            placeholder={t('profile.goalTitlePlaceholder')}
             placeholderTextColor={Colors[theme].icon}
             style={[
               styles.handleInput,
@@ -266,7 +268,7 @@ export default function ProfileScreen() {
           <TextInput
             value={longGoalDateInput}
             onChangeText={setLongGoalDateInput}
-            placeholder="目标日期（YYYY-MM-DD）"
+            placeholder={t('profile.goalDatePlaceholder')}
             placeholderTextColor={Colors[theme].icon}
             style={[
               styles.handleInput,
@@ -291,7 +293,13 @@ export default function ProfileScreen() {
                 ]}
                 onPress={() => setLongGoalExpectation(level)}
               >
-                <ThemedText style={{ fontSize: 12 }}>{level === 'low' ? '低' : level === 'high' ? '高' : '中'}</ThemedText>
+                <ThemedText style={{ fontSize: 12 }}>
+                  {level === 'low'
+                    ? t('profile.expectationLow')
+                    : level === 'high'
+                    ? t('profile.expectationHigh')
+                    : t('profile.expectationMedium')}
+                </ThemedText>
               </TouchableOpacity>
             ))}
           </View>
@@ -301,7 +309,9 @@ export default function ProfileScreen() {
             style={[styles.handleSaveBtn, { backgroundColor: Colors[theme].tint }]}
             disabled={isSavingLongGoals}
           >
-            <ThemedText style={styles.handleSaveText}>{isSavingLongGoals ? '保存中...' : '创建长期目标'}</ThemedText>
+            <ThemedText style={styles.handleSaveText}>
+              {isSavingLongGoals ? t('profile.goalCreateSaving') : t('profile.goalCreate')}
+            </ThemedText>
           </TouchableOpacity>
 
           <View style={styles.longGoalList}>
@@ -311,7 +321,11 @@ export default function ProfileScreen() {
                   <View style={{ flex: 1 }}>
                     <ThemedText type="defaultSemiBold" numberOfLines={1}>{item.title}</ThemedText>
                     <ThemedText style={{ color: Colors[theme].icon, fontSize: 12 }}>
-                      {item.targetDate || '未定日期'} · 期望 {item.expectation === 'low' ? '低' : item.expectation === 'high' ? '高' : '中'}
+                      {item.targetDate || t('profile.goalNotSetDate')} · {t('profile.expectation')} {item.expectation === 'low'
+                        ? t('profile.expectationLow')
+                        : item.expectation === 'high'
+                        ? t('profile.expectationHigh')
+                        : t('profile.expectationMedium')}
                     </ThemedText>
                   </View>
                   <View style={styles.longGoalRightCol}>
@@ -332,13 +346,13 @@ export default function ProfileScreen() {
                       );
                     })()}
                     <TouchableOpacity style={[styles.longGoalDeleteBtn, { borderColor: Colors[theme].border }]} onPress={() => void handleDeleteLongTermGoal(item.id)}>
-                      <ThemedText style={{ fontSize: 12 }}>删除</ThemedText>
+                      <ThemedText style={{ fontSize: 12 }}>{t('common.delete')}</ThemedText>
                     </TouchableOpacity>
                   </View>
                 </View>
               ))
             ) : (
-              <ThemedText style={{ color: Colors[theme].icon, fontSize: 12 }}>暂无长期目标，先创建一条</ThemedText>
+              <ThemedText style={{ color: Colors[theme].icon, fontSize: 12 }}>{t('profile.goalEmpty')}</ThemedText>
             )}
           </View>
         </ThemedView>

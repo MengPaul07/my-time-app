@@ -1,30 +1,30 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Button, Image, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { photoParser } from '@/modules/ai/services/photoParser';
 import { AIParseResult } from '@/modules/ai/types';
 
 export default function PhotoTestScreen() {
+  const { t } = useTranslation();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'ocr' | 'analyzing' | 'done'>('idle');
   const [result, setResult] = useState<AIParseResult | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const pickImage = async () => {
-    // 1. 请求相册权限
     const { status: mediaStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (mediaStatus !== 'granted') {
-      Alert.alert('需要权限', '请允许访问相册以测试照片解析');
+      Alert.alert(t('photoTest.permissionTitle'), t('photoTest.permissionMessage'));
       return;
     }
 
-    // 2. 选择照片
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false, 
-      quality: 0.3, // 降低质量以减少 Base64 体积，避免 Fetch 提交过大 Paylaod 失败
+      quality: 0.3,
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -40,7 +40,6 @@ export default function PhotoTestScreen() {
       setResult(null);
       setErrorMsg(null);
 
-      // 调用我们的照片解析服务
       const parsedData = await photoParser.parseScheduleFromPhoto(uri, (s) => {
         setStatus(s);
       });
@@ -48,48 +47,46 @@ export default function PhotoTestScreen() {
       setResult(parsedData);
       setStatus('done');
     } catch (err: any) {
-      setErrorMsg(err.message || '解析失败');
+      setErrorMsg(err.message || t('photoTest.parseFail'));
       setStatus('idle');
-      Alert.alert('错误', err.message);
+      Alert.alert(t('photoTest.errorTitle'), err.message || t('photoTest.parseFail'));
     }
   };
 
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <ThemedText type="title" style={styles.header}>DeepSeek 照片解析测试</ThemedText>
+        <ThemedText type="title" style={styles.header}>{t('photoTest.title')}</ThemedText>
         
         <View style={styles.imageContainer}>
           {imageUri ? (
             <Image source={{ uri: imageUri }} style={styles.image} />
           ) : (
             <View style={styles.placeholder}>
-              <ThemedText style={{ opacity: 0.5 }}>未选择照片</ThemedText>
+              <ThemedText style={{ opacity: 0.5 }}>{t('photoTest.noPhoto')}</ThemedText>
             </View>
           )}
         </View>
 
         <View style={styles.buttonContainer}>
-          <Button title={status === 'idle' || status === 'done' ? "从相册选择" : "正在处理..."} onPress={pickImage} disabled={status === 'ocr' || status === 'analyzing'} />
+          <Button title={status === 'idle' || status === 'done' ? t('photoTest.pickFromAlbum') : t('photoTest.processing')} onPress={pickImage} disabled={status === 'ocr' || status === 'analyzing'} />
         </View>
       </ScrollView>
 
-      {/* 状态指示 */}
       {status !== 'idle' && status !== 'done' && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
           <ThemedText style={styles.loadingText}>
-            {status === 'ocr' ? '正在识别文字 (模拟)...' : 'DeepSeek 正在思考...'}
+            {status === 'ocr' ? t('photoTest.ocring') : t('photoTest.analyzing')}
           </ThemedText>
         </View>
       )}
 
-      {/* 结果展示 */}
       {result && (
         <View style={styles.resultContainer}>
-          <ThemedText type="subtitle">解析成功 (AI JSON):</ThemedText>
+          <ThemedText type="subtitle">{t('photoTest.successTitle')}</ThemedText>
           <ThemedText style={styles.codeBlock}>{JSON.stringify(result, null, 2)}</ThemedText>
-          <ThemedText style={styles.note}>注意：因为没有真实 OCR，这里使用的是预设的模拟文本。但 JSON 结构是由 DeepSeek 实时生成的。</ThemedText>
+          <ThemedText style={styles.note}>{t('photoTest.note')}</ThemedText>
         </View>
       )}
 
