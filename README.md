@@ -2,7 +2,7 @@
 
 [中文](./README.md) | [English](./README.en.md)
 
-> 这是一个基于 Expo + React Native 的个人时间管理应用，当前以归档开源形式提供，适合学习与二次开发。
+> 这是一个基于 Expo + React Native的个人时间管理Agent应用，当前以归档开源形式提供。
 
 ## 1. 项目定位
 
