@@ -2,7 +2,7 @@
 
 [中文](./README.md) | [English](./README.en.md)
 
-> A learning-focused time management app built with Expo + React Native. This repository is currently published as an archived open-source project for study and customization.
+> A learning-focused **time management AI agent app** built with **Expo + React Native**. This repository is currently published as an archived open-source project for study and customization.
 
 ## 1. Project Overview
 
